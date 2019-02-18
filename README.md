@@ -1,5 +1,5 @@
 # naruto
-A Naruto themed programming language for parallel programming 
+A Naruto themed programming language for parallel programming, and low level programming
 
 
 ![naruto](https://media1.tenor.com/images/0856e9ce5c9514cb5a81e2cf2413ef30/tenor.gif?itemid=8479684)
@@ -14,6 +14,9 @@ Simple imperative language featuring
 - Loops
 - Functions
 - Variables
+
+With access to all system calls, but renamed as naruto themed.
+
 
 
 # Goals
