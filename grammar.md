@@ -1,5 +1,5 @@
 
-
+```
 <function> ::= <identifier> jutsu \n  <statement>* modori <expr>?
 
 <selection-statement> ::= if <boolean-expr> \n <statement> * modori 
@@ -19,3 +19,4 @@
 <boolean-expr> ::= yosh | false | <boolean-expr> <boolean-operator> <boolean-expr> | <boolean-function> | <expr>
 
 <lambad-thread> ::= TODO
+```
