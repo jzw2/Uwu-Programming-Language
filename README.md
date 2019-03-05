@@ -32,6 +32,8 @@ The more weeb a word is, the more often it should appear in the language.
 
 For more, refer to [this](https://imgur.com/gallery/c4oKNNO).
 
+[Potentially also add emoticons to language?](http://kaomoji.ru/en/)
+
 # Goals
 
 - Create parser
