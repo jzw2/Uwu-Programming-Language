@@ -1,22 +1,43 @@
-
 ```
-<function> ::= <identifier> jutsu \n  <statement>* modori <expr>?
+<identifier> ::= [a-Z]*
 
-<selection-statement> ::= if <boolean-expr> \n <statement> * modori 
-                  | if <boolean-expr> \n <stament>* else <statement> 
+<intger> ::= [0-9]*
 
+<float> ::= <integer> "." <integer>
 
-<while-statements> ::= shuriken <boolean-expr> \n <statement>* modori
+<function-declaration> ::= <identifier> <identifier>* "no jutsu" \n (<statement> \n)* \n\n
 
-<statement> ::= <while-statement> | <selection-statement>
+<function-call> ::= <identifier> "no jutsu" (\n)?
 
-<variable> ::= [a-z]*
+//sayonara is our return expression
+<expr> ::= "yosh" | "iee" 
+		| <identifier> 
+		| <expr> <binary-operator> <expr> 
+		| "sayonara" (<expr> "chan")?
+		| <float>
+		| <integer>
 
-<variable-declaration> ::= nin <variable> \n
+<selection-statement> ::= "nani" <boolean-expr> \n (<statement> \n)* \n
+		| "nani" <boolean-expr> \n <stament>* "baka" \n (<statement> \n)* \n
 
-<expr> ::= <variable> | <function-call> | <expr> <bin-operator> <expr> 
+//hopefully can make this better
+<while-statements> ::= "suki" <boolean-expr> \n (<statement> \n)* \n
 
-<boolean-expr> ::= yosh | false | <boolean-expr> <boolean-operator> <boolean-expr> | <boolean-function> | <expr>
+<statement> ::= <while-statement> 
+		| <selection-statement> 
+		| <expr>
 
-<lambad-thread> ::= TODO
+<variable-declaration> ::= <identifier> "wa" <expr> "desu" \n
+
+//must expand this!
+<binary-operator> ::= "desu ga" 
+		| "to" 
+		| "||" 
+		| "+" 
+		| "-" 
+		| "/" 
+		| "*" 
+		| "%"
+
+<lambad-thread> ::= shadow clone jutsu [0-9]* \n (<statement> \n)* \n
 ```
