@@ -16,13 +16,17 @@ namespace naruto
 		
 		size_t current;
 		size_t next = -1;
+		size_t pos_next = 0;
 		
 		do
 		{
 			current = next + 1;
 			next = input.find_first_of(delim_tab, current);
-			if(next == std::string::npos) 
-				next = input.find_first_of(delim_space, current);
+			pos_next = input.find_first_of(delim_space, current);
+			if(next != std::string::npos && pos_next != std::string::npos)
+				next = next < pos_next ? next : pos_next;
+			else if(next == std::string::npos)
+				next = pos_next;
 			output.push_back(input.substr(current, next - current));
 			std::cout << input.substr(current, next - current) << std::endl;
 		}

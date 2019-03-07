@@ -11,7 +11,7 @@ int main(void)
 	{
 		std::cout << "------------" << std::endl << 
 		"Obj type: " << item.code << std::endl << 
-		"Obj info: " << item.info << std::endl << 
+		"Obj info: '" << item.info << "'" << std::endl << 
 		"Int val: " << item.int_val << std::endl << 
 		"Flt val: " << item.float_val << std::endl;
 	}

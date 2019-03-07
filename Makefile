@@ -13,4 +13,5 @@ test.o :
 lexer.o : lexer.h
 	$(CXX) $(CXXFLAGS) lexer.cpp
 
-
+clean :
+	rm *.o
