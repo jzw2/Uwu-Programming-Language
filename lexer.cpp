@@ -7,7 +7,7 @@
 #define EMP_STR std::string("")
 
 namespace naruto
-{
+{	
 	std::vector<std::string> split(std::string input)
 	{
 		std::vector<std::string> output;
@@ -81,7 +81,7 @@ namespace naruto
 				lexes.push_back(Lex(TokenCodes::bin_op, "&&", 0, 0));
 			else if(items[i] == "\n")
 				lexes.push_back(Lex(TokenCodes::newline, EMP_STR, 0, 0));
-			else if(isdigit(items[i][0]))
+			else if(isdigit(items[i][0]) || (items[i].size() > 1 && items[i][0] == '-' && isdigit(items[i][0])))
 			{
 				if(items[i].find(".") != std::string::npos)
 				{
@@ -96,6 +96,14 @@ namespace naruto
 					std::stoi(items[i]), 0));
 
 				}
+			}
+			else if(items[i][0] == '(')
+			{	
+				lexes.push_back(Lex(TokenCodes::paren_open, EMP_STR, 0, 0));
+			}
+			else if(items[i][0] == ')')
+			{	
+				lexes.push_back(Lex(TokenCodes::paren_close, EMP_STR, 0, 0));
 			}
 			else if(isalpha(items[i][0]))
 			{	
@@ -113,7 +121,7 @@ namespace naruto
 		std::vector<Lex> out;
 		if(file.is_open())
 		{
-			while(getline(file,line))
+			while(getline(file, line))
 			{
 				naruto_lexize(line, out);
 				out.push_back(Lex(TokenCodes::newline, EMP_STR, 0, 0));
