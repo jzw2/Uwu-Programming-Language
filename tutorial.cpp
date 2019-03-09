@@ -1,3 +1,14 @@
+#include "llvm/ADT/APFloat.h"
+#include "llvm/ADT/STLExtras.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Constants.h"
+#include "llvm/IR/DerivedTypes.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Type.h"
+#include "llvm/IR/Verifier.h"
 #include "llvm/ADT/STLExtras.h"
 #include <algorithm>
 #include <cctype>
@@ -25,6 +36,7 @@ enum Token {
   tok_identifier = -4,
   tok_number = -5
 };
+using namespace llvm;
 
 static std::string IdentifierStr; // Filled in if tok_identifier
 static double NumVal;             // Filled in if tok_number
@@ -93,6 +105,7 @@ namespace {
 class ExprAST {
 public:
   virtual ~ExprAST() = default;
+  //virtual Value *codegen() = 0; 
   virtual void print_info() {}
 };
 
@@ -213,6 +226,18 @@ static int GetTokPrecedence() {
   if (TokPrec <= 0)
     return -1;
   return TokPrec;
+}
+static LLVMContext TheContext;
+static IRBuilder<> Builder(TheContext);
+static std::unique_ptr<Module> TheModule;
+static std::map<std::string, Value *> NamedValues;
+
+Value *LogErrorV(const char *Str) {
+  //LogError(Str);
+  if (Str) {
+    
+  }
+  return nullptr;
 }
 
 /// LogError* - These are little helper functions for error handling.
