@@ -1,31 +1,40 @@
 ```
+<comment> ::= "(OwO)".*"(T_T)"
+
 <identifier> ::= [a-Z]*
 
 <intger> ::= [0-9]*
 
 <float> ::= <integer> "." <integer>
 
-<function-declaration> ::= <identifier> <identifier>* "no jutsu" \n (<statement> \n)* \n\n
+<function-declaration> ::= <identifier> <identifier>* "no jutsu" \n (<statement>)* \n
 
-<function-call> ::= <identifier> "no jutsu" (\n)?
+<function-call> ::= <identifier> <expr>* "no jutsu"
+
+<main-function> ::= "senpai no jutsu" \n (<statement> \n | <return-expr> \n)* \n
 
 //sayonara is our return expression
-<expr> ::= "yosh" | "iee" 
+<expr> ::= ( "yosh" | "iee" 
 		| <identifier> 
+		| <function-call>
 		| <expr> <binary-operator> <expr> 
-		| "sayonara" (<expr> "chan")?
 		| <float>
-		| <integer>
+		| <integer> )
 
-<selection-statement> ::= "nani" <boolean-expr> \n (<statement> \n)* \n
-		| "nani" <boolean-expr> \n <stament>* "baka" \n (<statement> \n)* \n
+<return-expr> ::= "sayonara" (<expr> "chan")?
+
+<selection-statement> ::= "nani" <expr> \n (<statement> \n)* \n
+		| "nani" <expr> \n (<statement> \n)* "baka" \n (<statement> \n)* \n
+		| "nani" <expr> \n (<statement> \n)* "baka" <selection-statement>
 
 //hopefully can make this better
-<while-statements> ::= "suki" <boolean-expr> \n (<statement> \n)* \n
+<while-statements> ::= "suki" <expr> \n (<statement> \n)* \n
 
 <statement> ::= <while-statement> 
 		| <selection-statement> 
-		| <expr>
+		| <expr> \n
+		| <return-expr> \n
+		| <variable-declaration>
 
 <variable-declaration> ::= <identifier> "wa" <expr> "desu" \n
 
@@ -39,5 +48,5 @@
 		| "*" 
 		| "%"
 
-<lambad-thread> ::= shadow clone jutsu [0-9]* \n (<statement> \n)* \n
+<lambad-thread> ::= shadow clone jutsu <integer> \n (<statement> \n)* \n
 ```

@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <string>
+#include <unordered_map>
 
 namespace naruto
 {
@@ -23,6 +24,8 @@ namespace naruto
 		//desu_ga, are binary operators
 		//to,
 		bin_op,
+		paren_open,
+		paren_close,
 		newline
 	};
 	
