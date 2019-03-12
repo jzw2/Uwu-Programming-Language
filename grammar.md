@@ -18,5 +18,6 @@
 
 <boolean-expr> ::= yosh | false | <boolean-expr> <boolean-operator> <boolean-expr> | <boolean-function> | <expr>
 
-<lambad-thread> ::= TODO
-```
+<lambda-thread> ::= TODO
+
+``` 
