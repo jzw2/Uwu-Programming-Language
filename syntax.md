@@ -35,7 +35,7 @@ A return statement is used `sayanora` and terminated with `chan`
 add_1 n no jutsu
   sayanora n + 1 chan
 
-add_1 5 no jutsu (O_O) Should end up with 6 (T_T)
+add_1 5 no jutsu (OwO) Should end up with 6 (T_T)
 ```
 
 
@@ -46,7 +46,7 @@ Variables are case-sensitive, alpha numeric characters. Varibles do not need to 
 ## Example
 
 ```
-naruto wa 25 desu (O_O) Sets 'naruto' to 25 (T_T) 
+naruto wa 25 desu (OwO) Sets 'naruto' to 25 (T_T) 
 
 ```
 
