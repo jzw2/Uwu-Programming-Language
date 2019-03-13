@@ -1,0 +1,18 @@
+
+fizzbuzz no jutsu
+         i wa 0 desu
+         doki i < 100
+              nani i % 3 == 0 && i % 5 == 0
+                   puts "Fizzbuzz"
+              nani baka i % 3 == 0
+                   puts "Fizz"
+              nani baka i % 5 == 0
+                   puts "Buzz"
+              baka
+                   puts i
+
+              i wa i + 1 desu
+
+
+senpai no jutzu
+       fizzbuzz no jutsu
