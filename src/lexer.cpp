@@ -28,7 +28,7 @@ namespace naruto
 			else if(next == std::string::npos)
 				next = pos_next;
 			output.push_back(input.substr(current, next - current));
-			std::cout << input.substr(current, next - current) << std::endl;
+			//std::cout << input.substr(current, next - current) << std::endl;
 		}
 		while (next != std::string::npos);
 		return output;
