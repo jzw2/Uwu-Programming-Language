@@ -5,13 +5,16 @@
 
 <intger> ::= [0-9]*
 
+//I should change this later, semicolon is boring
+<delimiter> ::= (\n|;) 
+
 <float> ::= <integer> "." <integer>
 
-<function-declaration> ::= <identifier> <identifier>* "no jutsu" \n (<statement>)* !!
+<function-declaration> ::= <identifier> <identifier>* "no jutsu" <delimiter> (<statement>)* !!
 
 <function-call> ::= <identifier> <expr>* "no jutsu"
 
-<main-function> ::= "senpai no jutsu" \n (<statement>)* ~!
+<main-function> ::= "senpai no jutsu" <delimiter> (<statement>)* ~!
 
 <expr> ::= "yosh" | "iee"
 		| "namae" //used for getting the id of the thread
@@ -25,23 +28,23 @@
 //sayonara is our return expression
 <return-expr> ::= "sayonara" (<expr> "chan")?
 
-<selection-statement> ::= "nani" <expr> \n (<statement>)* ~?
-		| "nani" <expr> \n (<statement>)* "baka" \n (<statement>)* ~?
-		| "nani" <expr> \n (<statement>)* "baka" <selection-statement>
+<selection-statement> ::= "nani" <expr> <delimiter> (<statement>)* ~?
+		| "nani" <expr> <delimiter> (<statement>)* "baka" <delimiter> (<statement>)* ~?
+		| "nani" <expr> <delimiter> (<statement>)* "baka" <selection-statement>
 
 //hopefully can make this better
-<while-statements> ::= "doki" <expr> \n (<statement>)* ~~
+<while-statements> ::= "doki" <expr> <delimiter> (<statement>)* ~~
 
-<lambad-thread> ::= shadow clone jutsu <integer> \n (<statement>)* !!
+<lambad-thread> ::= shadow clone jutsu <integer> <delimiter> (<statement>)* !!
 
 <statement> ::= <while-statement> 
 		| <selection-statement> 
-		| <expr> \n
-		| <return-expr> \n
+		| <expr> <delimiter>
+		| <return-expr> <delimiter>
 		| <variable-declaration>
 		| <lambda-thread>
 
-<variable-declaration> ::= <identifier> "wa" <expr> "desu" \n
+<variable-declaration> ::= <identifier> "wa" <expr> "desu" <delimiter>
 
 //must expand this!
 <binary-operator> ::= "desu ga" 
