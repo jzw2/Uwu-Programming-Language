@@ -9,7 +9,7 @@ tutorial : clean tutorial.o
 	$(LD) tutorial.o $(LDFLAGS) -o tutorial
 
 tutorial.o :
-	$(CXX) $(CXXFLAGS) tutorial.cpp
+	$(CXX) tutorial.cpp $(CXXFLAGS)
 
 clean :
 	rm *.o
