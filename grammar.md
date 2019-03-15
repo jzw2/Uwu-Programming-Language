@@ -7,11 +7,11 @@
 
 <float> ::= <integer> "." <integer>
 
-<function-declaration> ::= <identifier> <identifier>* "no jutsu" \n (<statement>)* \n
+<function-declaration> ::= <identifier> <identifier>* "no jutsu" \n (<statement>)* !!
 
 <function-call> ::= <identifier> <expr>* "no jutsu"
 
-<main-function> ::= "senpai no jutsu" \n (<statement> \n | <return-expr> \n)* \n
+<main-function> ::= "senpai no jutsu" \n (<statement>)* ~!
 
 <expr> ::= "yosh" | "iee"
 		| "namae" //used for getting the id of the thread
@@ -25,14 +25,14 @@
 //sayonara is our return expression
 <return-expr> ::= "sayonara" (<expr> "chan")?
 
-<selection-statement> ::= "nani" <expr> \n (<statement> \n)* \n
-		| "nani" <expr> \n (<statement> \n)* "baka" \n (<statement> \n)* \n
-		| "nani" <expr> \n (<statement> \n)* "baka" <selection-statement>
+<selection-statement> ::= "nani" <expr> \n (<statement>)* ~?
+		| "nani" <expr> \n (<statement>)* "baka" \n (<statement>)* ~?
+		| "nani" <expr> \n (<statement>)* "baka" <selection-statement>
 
 //hopefully can make this better
-<while-statements> ::= "doki" <expr> \n (<statement> \n)* \n
+<while-statements> ::= "doki" <expr> \n (<statement>)* ~~
 
-<lambad-thread> ::= shadow clone jutsu <integer> \n (<statement> \n)* \n
+<lambad-thread> ::= shadow clone jutsu <integer> \n (<statement>)* !!
 
 <statement> ::= <while-statement> 
 		| <selection-statement> 
@@ -52,5 +52,11 @@
 		| "/" 
 		| "*" 
 		| "%"
+		| ">"
+		| "<"
+		| "<="
+		| ">="
+		| ">>"
+		| "<<"
 
 ```
