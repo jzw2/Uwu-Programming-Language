@@ -13,14 +13,16 @@
 
 <main-function> ::= "senpai no jutsu" \n (<statement> \n | <return-expr> \n)* \n
 
-//sayonara is our return expression
-<expr> ::= ( "yosh" | "iee" 
+<expr> ::= "yosh" | "iee"
+		| "namae" //used for getting the id of the thread
+		| "(" <expr> ")"
 		| <identifier> 
 		| <function-call>
 		| <expr> <binary-operator> <expr> 
 		| <float>
-		| <integer> )
+		| <integer>
 
+//sayonara is our return expression
 <return-expr> ::= "sayonara" (<expr> "chan")?
 
 <selection-statement> ::= "nani" <expr> \n (<statement> \n)* \n
@@ -28,13 +30,16 @@
 		| "nani" <expr> \n (<statement> \n)* "baka" <selection-statement>
 
 //hopefully can make this better
-<while-statements> ::= "suki" <expr> \n (<statement> \n)* \n
+<while-statements> ::= "doki" <expr> \n (<statement> \n)* \n
+
+<lambad-thread> ::= shadow clone jutsu <integer> \n (<statement> \n)* \n
 
 <statement> ::= <while-statement> 
 		| <selection-statement> 
 		| <expr> \n
 		| <return-expr> \n
 		| <variable-declaration>
+		| <lambda-thread>
 
 <variable-declaration> ::= <identifier> "wa" <expr> "desu" \n
 
@@ -48,5 +53,4 @@
 		| "*" 
 		| "%"
 
-<lambad-thread> ::= shadow clone jutsu <integer> \n (<statement> \n)* \n
 ```
