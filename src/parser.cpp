@@ -9,6 +9,24 @@
 #define RESET(obj) delete obj; obj = nullptr;
 namespace naruto
 {
+	int skip_paren(stream_t &stream, int start)
+	{
+		int paren_pos = start;
+		int stack = 0;
+		do
+		{
+			//if we reach the EOF before we find the end parens
+			//then parsing definitely failed
+			if(IS_EOF(stream, paren_pos))
+				return -1;
+			if(stream[paren_pos].isParenOpen()) stack++;
+			if(stream[paren_pos].isParenClose()) stack--;
+			paren_pos++;
+		}
+		while(stack);
+		return paren_pos;
+	}
+
 	int stream_pos;
 	std::vector<std::vector<std::string> > precedence;
 
@@ -138,16 +156,89 @@ namespace naruto
 
 	int ASTFnCall::parse(stream_t &stream, int start)
 	{
-		return -1;
+		if(stream[start].isIden() && stream[start+1].code == TokenCodes::no_jutsu)
+		{
+			iden = new ASTIden();
+			start = iden->parse(stream, start);
+			return start + 1;
+		}
+		if(stream[start].isIden() && stream[start+1].isColon())
+		{
+			int next_pos = start+2;
+			while(true)
+			{
+				if(stream[next_pos].code == TokenCodes::no_jutsu)
+				{
+					break;
+				}
+				else
+				{
+					ASTExpr * expr = new ASTExpr();
+					next_pos = expr->parse(stream, next_pos);
+					params.push_back(expr);
+				}
+			}
+			return next_pos+1;
+		}
+		else
+		{
+			return -1;
+		}
 	}	
 
 	int ASTExpr::find_end_expression(stream_t &stream, int start)
 	{
-		return -1;
+		int next_pos = start;
+		while(true)
+		{
+			if(next_pos >= stream.size())
+				return stream.size();
+			else if(is_end_expression(stream, next_pos))
+				break;
+
+			if(stream[next_pos].isParenOpen())
+			{
+				int paren_pos = skip_paren(stream, next_pos);
+				if(paren_pos != -1)
+					next_pos = paren_pos;
+				else
+					return -1;
+			}
+			else if(ASTFnCall::is_fn_call(stream, next_pos))
+			{
+				int fn_end = ASTFnCall::get_end_fn_call(stream, next_pos);
+				next_pos = fn_end;
+			}
+			else
+			{
+				next_pos++;
+			}
+		}
+
+		if(stream[next_pos].isParenOpen())
+		{
+			int paren_pos = skip_paren(stream, next_pos);
+			if(paren_pos != -1)
+				next_pos = paren_pos;
+			else
+				return -1;
+		}
+		else if(ASTFnCall::is_fn_call(stream, next_pos))
+		{
+			int fn_end = ASTFnCall::get_end_fn_call(stream, next_pos);
+			next_pos = fn_end;
+		}
+		else
+		{
+			next_pos++;
+		}
+		return next_pos;
 	}
 	
 	bool ASTExpr::is_end_expression(stream_t &stream, int start)
 	{
+		if(start >= stream.size())
+			return true;
 		int fn_end = ASTFnCall::get_end_fn_call(stream, start);
 		if(fn_end != -1) {
 			if(stream[fn_end].isKeyword() |
@@ -160,9 +251,26 @@ namespace naruto
 		{
 			if(stream[start].isIden() | stream[start].isParenClose())
 			{
-				start++;
+				if(stream[start].isParenOpen())
+				{
+					int paren_pos = skip_paren(stream, start);
+					if(paren_pos != -1)
+						start = paren_pos;
+					else
+						return -1;
+				}
+				else if(ASTFnCall::is_fn_call(stream, start))
+				{
+					int fn_end = ASTFnCall::get_end_fn_call(stream, start);
+					start = fn_end;
+				}
+				else
+				{
+					start++;
+				}
+
 				if(start > stream.size())
-					return true;;
+					return true;
 				if(stream[start].isKeyword() |
 				stream[start].isParenOpen() |
 				stream[start].isIden() |
@@ -171,24 +279,7 @@ namespace naruto
 			}
 		}
 		return false;
-	}
-	
-	int skip_paren(stream_t &stream, int start)
-	{
-		int paren_pos = start;
-		int stack = 1;
-		while(stack)
-		{
-			//if we reach the EOF before we find the end parens
-			//then parsing definitely failed
-			if(IS_EOF(stream, paren_pos))
-				return -1;
-			if(stream[paren_pos].isParenOpen()) stack++;
-			if(stream[paren_pos].isParenClose()) stack--;
-			paren_pos++;
-		}
-		return paren_pos;
-	}
+	}	
 
 	//this function is for parsing the things that are to the right and left of the highest
 	//precedence opator
@@ -229,26 +320,21 @@ namespace naruto
 
 	int ASTExpr::parse_lvl(stream_t &stream, int start, int end, std::vector<std::vector<std::string> > delim, int level)
 	{
-		if(level >= delim.size()) level = delim.size() - 1;
 		//find the highest level operator
 		int next_pos = start;
 		while(true)
 		{
-			//std::cout << "Next Pos: " << next_pos << " | End: " << end << std::endl;
-			if(next_pos == end) break;
+			if(next_pos >= end) break;
 			bool found = 0;
-			//std::cout << "Start compare for iter" << std::endl;
-			std::cout << "Level: " << level << " | Max lvl: " << delim.size() << std::endl;
 			for(auto o : delim[level])
 			{
-				//std::cout << "Comparing '" << o << "' to '" << stream[next_pos].info << "'" << std::endl;
 				if(stream[next_pos].info == o) found = 1;
 			}
 
 			int one_after_start = start;
 			if(stream[one_after_start].isParenOpen())
 			{
-				int paren_pos = skip_paren(stream, start);
+				int paren_pos = skip_paren(stream, one_after_start);
 				if(paren_pos != -1)
 					one_after_start = paren_pos;
 				else
@@ -256,51 +342,45 @@ namespace naruto
 			}
 			else if(ASTFnCall::is_fn_call(stream, one_after_start))
 			{
-				int fn_end = ASTFnCall::get_end_fn_call(stream, start);
+				std::cout << "found fn call" << std::endl;
+				int fn_end = ASTFnCall::get_end_fn_call(stream, one_after_start);
 				one_after_start = fn_end;
 			}
 			else 
 			{
 				one_after_start++;
 			}
-			std::cout << "OAS: " << one_after_start << " | End: " << end << std::endl;
 
 			//if we find one on this level, then we should parse to the right and left of it
 			if(found)
 			{
-				std::cout << "Found an operator: '" << stream[next_pos].info << "'" << std::endl;
-				
 				lhs = new ASTExpr();
 				lhs->parse_lvl(stream, start, next_pos, precedence, level+1);
 				op = new ASTBinOp();
 				op->parse(stream, next_pos);
 				rhs = new ASTExpr();
 				rhs->parse_lvl(stream, next_pos+1, end, precedence, level);
-				return 0;
+				return end;
 			}
 			else if(one_after_start >= end || IS_EOF(stream, one_after_start))
 			{
 				lhs = new ASTExpr();
 				lhs->parse_operand(stream, start);
-				return 0;
-				/*op = new ASTBinOp();
-				op->parse(stream, next_pos);
-				rhs = new ASTExpr();
-				rhs->parse_lvl(stream, end+1, stream.size(), delim, level);*/
+				return end;	
 			}
 
 			//get the next position accordingly
 			if(stream[next_pos].isParenOpen())
 			{
-				int paren_pos = skip_paren(stream, start);
+				int paren_pos = skip_paren(stream, next_pos);
 				if(paren_pos != -1)
 					next_pos = paren_pos;
 				else
 					return -1;
 			}
-			else if(ASTFnCall::is_fn_call(stream, start))
+			else if(ASTFnCall::is_fn_call(stream, next_pos))
 			{
-				int fn_end = ASTFnCall::get_end_fn_call(stream, start);
+				int fn_end = ASTFnCall::get_end_fn_call(stream, next_pos);
 				next_pos = fn_end;
 			}
 			else
@@ -308,14 +388,21 @@ namespace naruto
 				next_pos++;
 			}
 		}
-		std::cout << "didn't find anything, s: " << start << " | e: " << end << std::endl;
-		parse_lvl(stream, start, end, precedence, level+1);
-		return 0;
+		if(level == delim.size() -1)
+		{
+			return end;
+		}
+		else
+		{
+			return parse_lvl(stream, start, end, precedence, level+1);
+		}
 	}
 
 	int ASTExpr::parse(stream_t &stream, int start)
 	{
-		return parse_lvl(stream, start, stream.size(), precedence, 0);
+		int end = find_end_expression(stream, start);
+		std::cout << end << std::endl;
+		return parse_lvl(stream, start, find_end_expression(stream, start), precedence, 0);
 	}
 
 	int ASTRetExpr::parse(stream_t &stream, int start)
@@ -440,7 +527,7 @@ namespace naruto
 
 	void ASTExpr::print()
 	{
-		std::cout << " (EXPR ";
+		std::cout << " ( ";
 		if(lhs) lhs->print();
 		if(op) op->print();
 		if(rhs) rhs->print();
@@ -449,7 +536,7 @@ namespace naruto
 		if(flt) flt->print();
 		if(int_v) int_v->print();
 		if(call) call->print();
-		std::cout << " ENDEXPR)";
+		std::cout << " )";
 	}
 
 	void ASTRetExpr::print()

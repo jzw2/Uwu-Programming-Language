@@ -38,6 +38,10 @@ namespace naruto
 			return ")";
 		case TokenCodes::delim:
 			return "Delim";
+		case TokenCodes::colon:
+			return ":";
+		default:
+			return "???";
 		}
 
 	}
