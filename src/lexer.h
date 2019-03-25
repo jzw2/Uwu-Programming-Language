@@ -26,7 +26,8 @@ namespace naruto
 		bin_op,
 		paren_open,
 		paren_close,
-		newline
+		colon,
+		delim
 	};
 	
 	struct Lex
@@ -38,6 +39,15 @@ namespace naruto
 		float_val(d) 
 		{}
 		
+		bool isKeyword();
+		bool isIden();
+		bool isOp();
+		bool isParenOpen();
+		bool isParenClose();
+		bool isDelim();
+		bool isVal();
+		bool isColon();
+
 		int code;
 		std::string info;
 		long int_val;

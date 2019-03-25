@@ -1,14 +1,44 @@
 #include <iostream>
-
+#include <algorithm>
+#include <stack>
 #include "parser.h"
+#include "lexerUtils.h"
 
-#define ASSERT_BOUNDS(stream, start) if(start >= stream.size() || start == -1) return -1;
-
+#define IS_EOF(stream, start) (start >=  stream.size())
+#define ASSERT_BOUNDS(stream, start) if(start >= stream.size()) return stream.size(); else if(start == -1) return -1;
+#define RESET(obj) delete obj; obj = nullptr;
 namespace naruto
 {
 	int stream_pos;
+	std::vector<std::vector<std::string> > precedence;
 
-	int ASTBinOp::parse(std::vector<Lex> &stream, int start)
+	bool init_precedence() {
+		//precedence = std::vector<std::vector<std::string> >();
+		precedence.push_back(std::vector<std::string>());
+		precedence[0].push_back(std::string("<"));
+		precedence[0].push_back(std::string(">"));
+		precedence[0].push_back(std::string(">="));
+		precedence[0].push_back(std::string("<="));
+		precedence[0].push_back(std::string("=="));
+		precedence[0].push_back(std::string("!="));
+		precedence.push_back(std::vector<std::string>());
+		precedence[1].push_back(std::string("&&"));
+		precedence[1].push_back(std::string("||"));
+		precedence.push_back(std::vector<std::string>());
+		precedence[2].push_back(std::string("+"));
+		precedence[2].push_back(std::string("-"));
+		precedence.push_back(std::vector<std::string>());
+		precedence[3].push_back(std::string("*"));
+		precedence[3].push_back(std::string("/"));
+		precedence[3].push_back(std::string("%"));
+		precedence[3].push_back(std::string(">>"));
+		precedence[3].push_back(std::string("<<"));
+		return true;
+	}
+
+	bool init_result = init_precedence();
+
+	int ASTBinOp::parse(stream_t &stream, int start)
 	{
 		ASSERT_BOUNDS(stream, start);
 		if(stream[start].code == TokenCodes::bin_op)
@@ -22,7 +52,7 @@ namespace naruto
 		}
 	}
 	
-	int ASTIden::parse(std::vector<Lex> &stream, int start)
+	int ASTIden::parse(stream_t &stream, int start)
 	{
 		ASSERT_BOUNDS(stream, start);
 		if(stream[start].code == TokenCodes::identifier)
@@ -36,7 +66,7 @@ namespace naruto
 		}
 	}
 	
-	int ASTInt::parse(std::vector<Lex> &stream, int start)
+	int ASTInt::parse(stream_t &stream, int start)
 	{
 		ASSERT_BOUNDS(stream, start);
 		if(stream[start].code == TokenCodes::int_val)
@@ -50,7 +80,7 @@ namespace naruto
 		}	
 	}	
 
-	int ASTFloat::parse(std::vector<Lex> &stream, int start)
+	int ASTFloat::parse(stream_t &stream, int start)
 	{
 		ASSERT_BOUNDS(stream, start);
 		if(stream[start].code == TokenCodes::float_val)
@@ -63,235 +93,257 @@ namespace naruto
 			return -1;
 		}	
 	}
-std::string type_to_string(int code)
-{
-	switch(code)
-	{	
-	case naruto::TokenCodes::identifier:
-		return "Identifier";
-	case naruto::TokenCodes::int_val:
-		return "Int Val";
-	case naruto::TokenCodes::float_val:
-		return "Float Val";
-	case naruto::TokenCodes::no_jutsu:
-		return "No Jutsu";
-	case naruto::TokenCodes::sayonara:
-		return "Sayonara";
-	case naruto::TokenCodes::chan:
-		return "Chan";
-	case naruto::TokenCodes::nani:
-		return "Nani";
-	case naruto::TokenCodes::baka:
-		return "Baka";
-	case naruto::TokenCodes::suki:
-		return "Suki";
-	case naruto::TokenCodes::wa:
-		return "Wa";
-	case naruto::TokenCodes::desu:
-		return "Desu";
-	case naruto::TokenCodes::bin_op:
-		return "Binary Operator";
-	case naruto::TokenCodes::paren_open:
-		return "(";
-	case naruto::TokenCodes::paren_close:
-		return ")";
-	case naruto::TokenCodes::newline:
-		return "Newline";
-	}
-}
 
-
-	int ASTFnCall::parse(std::vector<Lex> &stream, int start)
-	{	
-		ASSERT_BOUNDS(stream, start);
-		int new_start = start;
-		if(stream[start].code == TokenCodes::identifier)
+	//returns the index of the thing right after the fn call
+	int ASTFnCall::get_end_fn_call(stream_t &stream, int start)
+	{
+		if(stream[start].isIden())
 		{
-			iden = new ASTIden;
-			start = iden->parse(stream, start);
-			std::cout << "Starting fncall: " << start << std::endl;
-			while(start != -1 && stream[start].code != TokenCodes::no_jutsu)
+			start++;
+			if(start >= stream.size())
+				return -1;
+			if(stream[start].code == TokenCodes::no_jutsu)
 			{
-				ASTExpr * expr = new ASTExpr;
-				start = expr->parse(stream, start);
-				std::cout << "Found param: "; expr->print();
-		
-		std::cout << std::endl << "------------" << std::endl << 
-		"Obj type: " << type_to_string(stream[start].code) << std::endl << 
-		"Obj info: '" << stream[start].info << "'" << std::endl << 
-		"Int val: " << stream[start].int_val << std::endl << 
-		"Flt val: " << stream[start].float_val << std::endl;
-
-				params.push_back(expr);
+				return start+1;
 			}
-			if(start == -1)
+			else if(stream[start].isColon())
 			{
-				delete iden; iden = nullptr;
-				for(auto p : params)
+				for(; start < stream.size(); start++)
 				{
-					delete p;
+					if(stream[start].isIden())
+					{
+						start++;
+						if(start >= stream.size())
+							return -1;
+						if(stream[start].isColon())
+						{
+							start = get_end_fn_call(stream, start-1);
+						}
+					}
+					else if(stream[start].code == TokenCodes::no_jutsu)
+					{
+						return start+1;
+					}
 				}
-				params.clear();
-				return start;
-			}
-			else
-			{
-				return start + 1;
+				return -1;
 			}
 		}
 		return -1;
 	}
-
-	int ASTExpr::parse_rhs(std::vector<Lex> &stream, int start)
+	
+	bool ASTFnCall::is_fn_call(stream_t &stream, int start)
 	{
-		ASSERT_BOUNDS(stream, start);
-		if(stream[start].code == TokenCodes::bin_op)
-		{
-			op = new ASTBinOp;
-			start = op->parse(stream, start);
-			
-			if(start == -1)
-			{
-				delete op; op = nullptr;
-				return start;
-			}
+		return get_end_fn_call(stream, start) != -1;
+	}
 
-			rhs = new ASTExpr;
-			start = rhs->parse(stream, start);
-			if(start == -1)
-			{
-				delete op; op = nullptr;
-				delete rhs; rhs = nullptr;
-			}
-			return start;
+	int ASTFnCall::parse(stream_t &stream, int start)
+	{
+		return -1;
+	}	
+
+	int ASTExpr::find_end_expression(stream_t &stream, int start)
+	{
+		return -1;
+	}
+	
+	bool ASTExpr::is_end_expression(stream_t &stream, int start)
+	{
+		int fn_end = ASTFnCall::get_end_fn_call(stream, start);
+		if(fn_end != -1) {
+			if(stream[fn_end].isKeyword() |
+			stream[fn_end].isParenOpen() |
+			stream[fn_end].isIden() |
+			stream[fn_end].isDelim())
+				return true;
 		}
 		else
 		{
-			return -1;
-		}
-	}
-
-	int ASTExpr::parse(std::vector<Lex> &stream, int start)
-	{
-		ASSERT_BOUNDS(stream, start);
-		int pos_start;
-		std::cout << start << std::endl;
-		if(stream[start].code == TokenCodes::paren_open)
-		{
-			lhs = new ASTExpr;
-			start = lhs->parse(stream, start + 1);
-			if(start == -1)
+			if(stream[start].isIden() | stream[start].isParenClose())
 			{
-				delete lhs;
-				lhs = nullptr;
+				start++;
+				if(start > stream.size())
+					return true;;
+				if(stream[start].isKeyword() |
+				stream[start].isParenOpen() |
+				stream[start].isIden() |
+				stream[start].isDelim())
+					return true;
+			}
+		}
+		return false;
+	}
+	
+	int skip_paren(stream_t &stream, int start)
+	{
+		int paren_pos = start;
+		int stack = 1;
+		while(stack)
+		{
+			//if we reach the EOF before we find the end parens
+			//then parsing definitely failed
+			if(IS_EOF(stream, paren_pos))
 				return -1;
+			if(stream[paren_pos].isParenOpen()) stack++;
+			if(stream[paren_pos].isParenClose()) stack--;
+			paren_pos++;
+		}
+		return paren_pos;
+	}
+
+	//this function is for parsing the things that are to the right and left of the highest
+	//precedence opator
+	int ASTExpr::parse_operand(stream_t &stream, int start)
+	{
+		//first try checking for a function call. 
+		if(ASTFnCall::is_fn_call(stream, start))
+		{
+			call = new ASTFnCall();
+			call->parse(stream, start);
+		}
+		if(stream[start].isParenOpen())
+		{
+			//if its parentheses, treat it like a new expression with precedence reset
+			int end = skip_paren(stream, start);
+			return parse_lvl(stream, start+1, end-1, precedence, 0);
+		}
+		else if(stream[start].isIden())
+		{
+			iden = new ASTIden();
+			return iden->parse(stream, start);
+		}
+		else if(stream[start].isVal())
+		{
+			if(stream[start].code == TokenCodes::int_val)
+			{
+				int_v = new ASTInt();
+				return int_v->parse(stream, start);
 			}
 			else
 			{
-				pos_start = parse_rhs(stream, start);
+				flt = new ASTFloat();
+				return flt->parse(stream, start);
+			}
+		}
+		return -1;
+	}	
+
+	int ASTExpr::parse_lvl(stream_t &stream, int start, int end, std::vector<std::vector<std::string> > delim, int level)
+	{
+		if(level >= delim.size()) level = delim.size() - 1;
+		//find the highest level operator
+		int next_pos = start;
+		while(true)
+		{
+			//std::cout << "Next Pos: " << next_pos << " | End: " << end << std::endl;
+			if(next_pos == end) break;
+			bool found = 0;
+			//std::cout << "Start compare for iter" << std::endl;
+			std::cout << "Level: " << level << " | Max lvl: " << delim.size() << std::endl;
+			for(auto o : delim[level])
+			{
+				//std::cout << "Comparing '" << o << "' to '" << stream[next_pos].info << "'" << std::endl;
+				if(stream[next_pos].info == o) found = 1;
+			}
+
+			int one_after_start = start;
+			if(stream[one_after_start].isParenOpen())
+			{
+				int paren_pos = skip_paren(stream, start);
+				if(paren_pos != -1)
+					one_after_start = paren_pos;
+				else
+					return -1;
+			}
+			else if(ASTFnCall::is_fn_call(stream, one_after_start))
+			{
+				int fn_end = ASTFnCall::get_end_fn_call(stream, start);
+				one_after_start = fn_end;
+			}
+			else 
+			{
+				one_after_start++;
+			}
+			std::cout << "OAS: " << one_after_start << " | End: " << end << std::endl;
+
+			//if we find one on this level, then we should parse to the right and left of it
+			if(found)
+			{
+				std::cout << "Found an operator: '" << stream[next_pos].info << "'" << std::endl;
 				
-				if(pos_start == -1)
-					return start + 1;
-				else
-					return pos_start + 1;
+				lhs = new ASTExpr();
+				lhs->parse_lvl(stream, start, next_pos, precedence, level+1);
+				op = new ASTBinOp();
+				op->parse(stream, next_pos);
+				rhs = new ASTExpr();
+				rhs->parse_lvl(stream, next_pos+1, end, precedence, level);
+				return 0;
 			}
-		}
-		else if(stream[start].code == TokenCodes::identifier)
-		{
-			std::cout << "Trying fncall!" << std::endl;
-			call = new ASTFnCall;
-			pos_start = call->parse(stream, start);
-			if(pos_start == -1)
+			else if(one_after_start >= end || IS_EOF(stream, one_after_start))
 			{
-				std::cout << "fncall failed!" << std::endl;
-				delete call;
-				call = nullptr;
-				
-				iden = new ASTIden;
-			    start = iden->parse(stream, start);
+				lhs = new ASTExpr();
+				lhs->parse_operand(stream, start);
+				return 0;
+				/*op = new ASTBinOp();
+				op->parse(stream, next_pos);
+				rhs = new ASTExpr();
+				rhs->parse_lvl(stream, end+1, stream.size(), delim, level);*/
+			}
 
-				pos_start = parse_rhs(stream, start);
-				if(pos_start == -1)
-				{
-					return start;
-				}
+			//get the next position accordingly
+			if(stream[next_pos].isParenOpen())
+			{
+				int paren_pos = skip_paren(stream, start);
+				if(paren_pos != -1)
+					next_pos = paren_pos;
 				else
-				{
-					return pos_start;
-				}
+					return -1;
+			}
+			else if(ASTFnCall::is_fn_call(stream, start))
+			{
+				int fn_end = ASTFnCall::get_end_fn_call(stream, start);
+				next_pos = fn_end;
 			}
 			else
 			{
-			std::cout << std::endl << "Trying the rhs fn call" << std::endl << 
-			"------------" << std::endl << 
-		"Obj type: " << type_to_string(stream[start].code) << std::endl << 
-		"Obj info: '" << stream[start].info << "'" << std::endl << 
-		"Int val: " << stream[start].int_val << std::endl << 
-		"Flt val: " << stream[start].float_val << std::endl;
-
-
-				pos_start = parse_rhs(stream, start);				
-	
-				if(pos_start == -1)
-					return start;
-				else
-					return pos_start;
+				next_pos++;
 			}
 		}
-		else if(stream[start].code == TokenCodes::float_val)
-		{
-			flt = new ASTFloat;
-			start = flt->parse(stream, start);
-
-			pos_start = parse_rhs(stream, start);
-			if(pos_start == -1)
-				return start;
-			else
-				return pos_start;
-		}
-		else if(stream[start].code == TokenCodes::int_val)
-		{
-			int_v = new ASTInt;
-			start = int_v->parse(stream, start);
-
-			pos_start = parse_rhs(stream, start);
-			if(pos_start == -1)
-				return start;
-			else
-				return pos_start;
-		}
-		else
-		{
-			return -1;
-		}
+		std::cout << "didn't find anything, s: " << start << " | e: " << end << std::endl;
+		parse_lvl(stream, start, end, precedence, level+1);
+		return 0;
 	}
 
-	int ASTRetExpr::parse(std::vector<Lex> &stream, int start)
+	int ASTExpr::parse(stream_t &stream, int start)
+	{
+		return parse_lvl(stream, start, stream.size(), precedence, 0);
+	}
+
+	int ASTRetExpr::parse(stream_t &stream, int start)
 	{
 		return 0;
 	}
 
-	int ASTVarDecl::parse(std::vector<Lex> &stream, int start)
+	int ASTVarDecl::parse(stream_t &stream, int start)
 	{
 		return 0;
 	}
 
-	int ASTSelState::parse(std::vector<Lex> &stream, int start)
+	int ASTSelState::parse(stream_t &stream, int start)
 	{
 		return 0;
 	}
 
-	int ASTWhileState::parse(std::vector<Lex> &stream, int start)
+	int ASTWhileState::parse(stream_t &stream, int start)
 	{
 		return 0;
 	}
 	
-	int ASTState::parse(std::vector<Lex> &stream, int start)
+	int ASTState::parse(stream_t &stream, int start)
 	{
 		return 0;
 	}
 
-	int ASTFnDecl::parse(std::vector<Lex> &stream, int start)
+	int ASTFnDecl::parse(stream_t &stream, int start)
 	{
 		return 0;
 	}

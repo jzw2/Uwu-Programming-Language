@@ -8,6 +8,50 @@
 
 namespace naruto
 {	
+	bool Lex::isKeyword()
+	{
+		return 
+		code == TokenCodes::chan |
+		code == TokenCodes::sayonara |
+		code == TokenCodes::no_jutsu |
+		code == TokenCodes::nani |
+		code == TokenCodes::baka |
+		code == TokenCodes::suki |
+		code == TokenCodes::wa |
+		code == TokenCodes::desu;
+	}
+	
+	bool Lex::isIden()
+	{
+		return code == TokenCodes::identifier;
+	}
+	bool Lex::isOp()
+	{
+		return code == TokenCodes::bin_op;
+	}
+	bool Lex::isParenOpen()
+	{
+		return code == TokenCodes::paren_open;
+	}
+	bool Lex::isParenClose()
+	{
+		return code == TokenCodes::paren_close;
+	}
+	bool Lex::isDelim()
+	{
+		return code  == TokenCodes::delim;
+	}
+	bool Lex::isVal()
+	{
+		return 
+		code == TokenCodes::float_val |
+		code == TokenCodes::int_val;
+	}
+	bool Lex::isColon()
+	{
+		return code == TokenCodes::colon;
+	}
+	
 	std::vector<std::string> split(std::string input)
 	{
 		std::vector<std::string> output;
@@ -49,6 +93,8 @@ namespace naruto
 					i++;
 				}
 			}
+			else if(items[i] == ":")
+				lexes.push_back(Lex(TokenCodes::colon, EMP_STR, 0, 0));
 			else if(items[i] == "yosh")
 				lexes.push_back(Lex(TokenCodes::int_val, EMP_STR, 1, 0));
 			else if(items[i] == "iee")
@@ -79,9 +125,14 @@ namespace naruto
 			}
 			else if(items[i] == "to")
 				lexes.push_back(Lex(TokenCodes::bin_op, "&&", 0, 0));
-			else if(items[i] == "\n")
-				lexes.push_back(Lex(TokenCodes::newline, EMP_STR, 0, 0));
-			else if(isdigit(items[i][0]) || (items[i].size() > 1 && items[i][0] == '-' && isdigit(items[i][0])))
+			else if(items[i] == "\n" || 
+			items[i] == "~" || 
+			items[i] == "~~" || 
+			items[i] == "~?" ||
+			items[i] == "~!")
+				lexes.push_back(Lex(TokenCodes::delim, EMP_STR, 0, 0));
+			else if(isdigit(items[i][0]) ||
+			(items[i].size() > 1 && items[i][0] == '-' && isdigit(items[i][0])))
 			{
 				if(items[i].find(".") != std::string::npos)
 				{
@@ -124,7 +175,7 @@ namespace naruto
 			while(getline(file, line))
 			{
 				naruto_lexize(line, out);
-				out.push_back(Lex(TokenCodes::newline, EMP_STR, 0, 0));
+				out.push_back(Lex(TokenCodes::delim, EMP_STR, 0, 0));
 			}
 			file.close();
 		}

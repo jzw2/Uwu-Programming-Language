@@ -5,11 +5,12 @@
 
 namespace naruto
 {
+	typedef std::vector<Lex> stream_t;
 	extern int stream_pos;
 	class ASTNode
 	{	
 	public:
-		virtual int parse(std::vector<Lex> &stream, int start) = 0;
+		virtual int parse(stream_t &stream, int start) = 0;
 		virtual llvm::Value * generate() = 0;
 		virtual void print() = 0;
 	};
@@ -19,7 +20,7 @@ namespace naruto
 		std::string op;
 	public:
 		ASTBinOp() : op(std::string()) {}
-		virtual int parse(std::vector<Lex> &stream, int start) override;
+		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
 		virtual void print() override;
 	};
@@ -29,7 +30,7 @@ namespace naruto
 		std::string iden;
 	public:
 		ASTIden() : iden(std::string()) {}
-		virtual int parse(std::vector<Lex> &stream, int start) override;
+		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
 		virtual void print() override;
 	};
@@ -39,7 +40,7 @@ namespace naruto
 		long val;
 	public:
 		ASTInt() : val(0) {}
-		virtual int parse(std::vector<Lex> &stream, int start) override;
+		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
 		virtual void print() override;
 	};
@@ -49,7 +50,7 @@ namespace naruto
 		double val;
 	public:
 		ASTFloat() : val(0) {}
-		virtual int parse(std::vector<Lex> &stream, int start) override;
+		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
 		virtual void print() override;
 	};
@@ -61,8 +62,10 @@ namespace naruto
 		ASTIden * iden;
 		std::vector<ASTExpr *> params;
 	public:
+		static int get_end_fn_call(stream_t &stream, int start);
+		static bool is_fn_call(stream_t &stream, int start);
 		ASTFnCall() : iden(nullptr), params(std::vector<ASTExpr *>()) {}
-		virtual int parse(std::vector<Lex> &stream, int start) override;
+		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
 		virtual void print() override;
 	};
@@ -78,10 +81,24 @@ namespace naruto
 		ASTFloat * flt;
 		ASTInt * int_v;
 		ASTFnCall * call;
-		int parse_rhs(std::vector<Lex> &stream, int start);
+		//specify a level to parse at
+		int parse_lvl(stream_t &stream, 
+			int start, 
+			int end, 
+			std::vector<std::vector<std::string> > delim, 
+			int level);
+		int parse_operand(stream_t &stream, int start);
 	public:
-		ASTExpr() : lhs(nullptr), op(nullptr), rhs(nullptr), iden(nullptr), flt(nullptr), int_v(nullptr), call(nullptr) {}
-		virtual int parse(std::vector<Lex> &stream, int start) override;
+		static int find_end_expression(stream_t &stream, int start);
+		static bool is_end_expression(stream_t &stream, int start);
+		ASTExpr() : lhs(nullptr), 
+			op(nullptr), 
+			rhs(nullptr), 
+			iden(nullptr), 
+			flt(nullptr), 
+			int_v(nullptr), 
+			call(nullptr) {}
+		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
 		virtual void print() override;
 	};
@@ -90,7 +107,7 @@ namespace naruto
 	{
 		ASTExpr * expr;
 	public:
-		virtual int parse(std::vector<Lex> &stream, int start) override;
+		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
 		virtual void print() override;
 	};
@@ -100,7 +117,7 @@ namespace naruto
 		ASTIden * name;
 		ASTExpr * val;
 	public:
-		virtual int parse(std::vector<Lex> &stream, int start) override;
+		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
 		virtual void print() override;
 	};
@@ -114,7 +131,7 @@ namespace naruto
 		std::vector<ASTState*> else_body;
 		ASTSelState * elif;
 	public:
-		virtual int parse(std::vector<Lex> &stream, int start) override;
+		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
 		virtual void print() override;
 	};
@@ -124,7 +141,7 @@ namespace naruto
 		ASTExpr * expr;
 		std::vector<ASTState*> state;
 	public:
-		virtual int parse(std::vector<Lex> &stream, int start) override;
+		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
 		virtual void print() override;
 	};
@@ -137,7 +154,7 @@ namespace naruto
 		ASTRetExpr * retexpr;
 		ASTVarDecl * vdc;
 	public:
-		virtual int parse(std::vector<Lex> &stream, int start) override;
+		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
 		virtual void print() override;
 	};
@@ -148,7 +165,7 @@ namespace naruto
 		std::vector<ASTIden*> params;
 		std::vector<ASTState*> body;
 	public:
-		virtual int parse(std::vector<Lex> &stream, int start) override;
+		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
 		virtual void print() override;
 	};
