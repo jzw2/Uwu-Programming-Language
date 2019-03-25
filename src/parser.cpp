@@ -33,15 +33,15 @@ namespace naruto
 	bool init_precedence() {
 		//precedence = std::vector<std::vector<std::string> >();
 		precedence.push_back(std::vector<std::string>());
-		precedence[0].push_back(std::string("<"));
-		precedence[0].push_back(std::string(">"));
-		precedence[0].push_back(std::string(">="));
-		precedence[0].push_back(std::string("<="));
-		precedence[0].push_back(std::string("=="));
-		precedence[0].push_back(std::string("!="));
+		precedence[0].push_back(std::string("&&"));
+		precedence[0].push_back(std::string("||"));
 		precedence.push_back(std::vector<std::string>());
-		precedence[1].push_back(std::string("&&"));
-		precedence[1].push_back(std::string("||"));
+		precedence[1].push_back(std::string("<"));
+		precedence[1].push_back(std::string(">"));
+		precedence[1].push_back(std::string(">="));
+		precedence[1].push_back(std::string("<="));
+		precedence[1].push_back(std::string("=="));
+		precedence[1].push_back(std::string("!="));
 		precedence.push_back(std::vector<std::string>());
 		precedence[2].push_back(std::string("+"));
 		precedence[2].push_back(std::string("-"));

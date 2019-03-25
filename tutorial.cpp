@@ -516,7 +516,6 @@ Value *CallExprAST::codegen() {
 
   return Builder.CreateCall(CalleeF, ArgsV, "calltmp");
 }
-
 /// top ::= definition | external | expression | ';'
 static void MainLoop() {
   while (true) {
@@ -544,7 +543,7 @@ static void MainLoop() {
 // Main driver code.
 //===----------------------------------------------------------------------===//
 
-int main() {
+ins main() {
   // Install standard binary operators.
   // 1 is lowest precedence.
   BinopPrecedence['<'] = 10;
