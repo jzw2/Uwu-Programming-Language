@@ -4,8 +4,8 @@
 #include "parser.h"
 #include "lexerUtils.h"
 
-#define IS_EOF(stream, start) (start >=  stream.size())
-#define ASSERT_BOUNDS(stream, start) if(start >= stream.size()) return stream.size(); else if(start == -1) return -1;
+#define IS_EOF(stream, start) (start >=  (int)stream.size())
+#define ASSERT_BOUNDS(stream, start) if(start >= (int)stream.size()) return stream.size(); else if(start == -1) return -1;
 #define RESET(obj) delete obj; obj = nullptr;
 namespace naruto
 {
@@ -30,7 +30,8 @@ namespace naruto
 	int stream_pos;
 	std::vector<std::vector<std::string> > precedence;
 
-	bool init_precedence() {
+	bool init_precedence() 
+	{
 		//precedence = std::vector<std::vector<std::string> >();
 		precedence.push_back(std::vector<std::string>());
 		precedence[0].push_back(std::string("&&"));
@@ -118,24 +119,25 @@ namespace naruto
 		if(stream[start].isIden())
 		{
 			start++;
-			if(start >= stream.size())
+			if(start >= (int)stream.size())
 				return -1;
-			if(stream[start].code == TokenCodes::no_jutsu)
+			/*if(stream[start].code == TokenCodes::no_jutsu)
 			{
 				return start+1;
 			}
-			else if(stream[start].isColon())
+			else*/ if(stream[start].isColon())
 			{
-				for(; start < stream.size(); start++)
+				for(; start < (int)stream.size(); start++)
 				{
 					if(stream[start].isIden())
 					{
-						start++;
-						if(start >= stream.size())
-							return -1;
-						if(stream[start].isColon())
+						if(start+1 >= (int)stream.size())
 						{
-							start = get_end_fn_call(stream, start-1);
+							return -1;
+						}
+						if(stream[start+1].isColon())
+						{
+							start = get_end_fn_call(stream, start);
 						}
 					}
 					else if(stream[start].code == TokenCodes::no_jutsu)
@@ -156,18 +158,24 @@ namespace naruto
 
 	int ASTFnCall::parse(stream_t &stream, int start)
 	{
-		if(stream[start].isIden() && stream[start+1].code == TokenCodes::no_jutsu)
+		/*if(stream[start].isIden() && stream[start+1].code == TokenCodes::no_jutsu)
 		{
 			iden = new ASTIden();
 			start = iden->parse(stream, start);
 			return start + 1;
-		}
+		}*/
 		if(stream[start].isIden() && stream[start+1].isColon())
 		{
-			int next_pos = start+2;
+			iden = new ASTIden();
+			start = iden->parse(stream, start);
+			int next_pos = start+1;
 			while(true)
 			{
-				if(stream[next_pos].code == TokenCodes::no_jutsu)
+				if(next_pos >= (int)stream.size())
+				{
+					return -1;
+				}
+				else if(stream[next_pos].code == TokenCodes::no_jutsu)
 				{
 					break;
 				}
@@ -191,7 +199,7 @@ namespace naruto
 		int next_pos = start;
 		while(true)
 		{
-			if(next_pos >= stream.size())
+			if(next_pos >= (int)stream.size())
 				return stream.size();
 			else if(is_end_expression(stream, next_pos))
 				break;
@@ -225,6 +233,7 @@ namespace naruto
 		}
 		else if(ASTFnCall::is_fn_call(stream, next_pos))
 		{
+			
 			int fn_end = ASTFnCall::get_end_fn_call(stream, next_pos);
 			next_pos = fn_end;
 		}
@@ -237,15 +246,24 @@ namespace naruto
 	
 	bool ASTExpr::is_end_expression(stream_t &stream, int start)
 	{
-		if(start >= stream.size())
+		if(start >= (int)(stream.size() - 1))
+		{
 			return true;
+		}
 		int fn_end = ASTFnCall::get_end_fn_call(stream, start);
-		if(fn_end != -1) {
+		if(fn_end >= (int)stream.size())
+		{
+			return true;
+		}
+		else if(fn_end != -1) 
+		{
 			if(stream[fn_end].isKeyword() |
 			stream[fn_end].isParenOpen() |
 			stream[fn_end].isIden() |
 			stream[fn_end].isDelim())
+			{
 				return true;
+			}
 		}
 		else
 		{
@@ -254,13 +272,18 @@ namespace naruto
 				if(stream[start].isParenOpen())
 				{
 					int paren_pos = skip_paren(stream, start);
+					
 					if(paren_pos != -1)
+					{
 						start = paren_pos;
+					}
 					else
+					{
 						return -1;
+					}
 				}
 				else if(ASTFnCall::is_fn_call(stream, start))
-				{
+				{	
 					int fn_end = ASTFnCall::get_end_fn_call(stream, start);
 					start = fn_end;
 				}
@@ -269,13 +292,17 @@ namespace naruto
 					start++;
 				}
 
-				if(start > stream.size())
+				if(start > (int)stream.size())
+				{
 					return true;
+				}
 				if(stream[start].isKeyword() |
 				stream[start].isParenOpen() |
 				stream[start].isIden() |
 				stream[start].isDelim())
+				{
 					return true;
+				}
 			}
 		}
 		return false;
@@ -289,7 +316,7 @@ namespace naruto
 		if(ASTFnCall::is_fn_call(stream, start))
 		{
 			call = new ASTFnCall();
-			call->parse(stream, start);
+			return call->parse(stream, start);
 		}
 		if(stream[start].isParenOpen())
 		{
@@ -324,7 +351,11 @@ namespace naruto
 		int next_pos = start;
 		while(true)
 		{
-			if(next_pos >= end) break;
+			if(next_pos >= end) 
+			{
+				break;
+			}
+
 			bool found = 0;
 			for(auto o : delim[level])
 			{
@@ -342,7 +373,6 @@ namespace naruto
 			}
 			else if(ASTFnCall::is_fn_call(stream, one_after_start))
 			{
-				std::cout << "found fn call" << std::endl;
 				int fn_end = ASTFnCall::get_end_fn_call(stream, one_after_start);
 				one_after_start = fn_end;
 			}
@@ -388,7 +418,7 @@ namespace naruto
 				next_pos++;
 			}
 		}
-		if(level == delim.size() -1)
+		if(level == (int)(delim.size() - 1))
 		{
 			return end;
 		}
@@ -401,7 +431,6 @@ namespace naruto
 	int ASTExpr::parse(stream_t &stream, int start)
 	{
 		int end = find_end_expression(stream, start);
-		std::cout << end << std::endl;
 		return parse_lvl(stream, start, find_end_expression(stream, start), precedence, 0);
 	}
 
