@@ -8,6 +8,7 @@ int main(void)
 {
 	std::string input = "fibonacci : nth no jutsu";
 	std::vector<naruto::Lex> lexes;
+  naruto::sModule = std::make_unique<Module>("sugma", naruto::sContext);
 	naruto::naruto_lexize(input, lexes);
 	for(auto item : lexes)
 	{
