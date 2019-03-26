@@ -4,12 +4,30 @@
 #include "parser.h"
 #include "lexerUtils.h"
 
+#include "llvm/ADT/APFloat.h"
+#include "llvm/ADT/STLExtras.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Constants.h"
+#include "llvm/IR/DerivedTypes.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Type.h"
+#include "llvm/IR/Verifier.h"
+#include "llvm/ADT/STLExtras.h"
+#include "llvm/ADT/APInt.h"
 #define IS_EOF(stream, start) (start >=  (int)stream.size())
 #define ASSERT_BOUNDS(stream, start) if(start >= (int)stream.size()) return stream.size(); else if(start == -1) return -1;
 #define RESET(obj) delete obj; obj = nullptr;
 namespace naruto
 {
-	int skip_paren(stream_t &stream, int start)
+  
+  llvm::LLVMContext sContext;
+  llvm::IRBuilder<> sBuilder(sContext);
+  std::unique_ptr<llvm::Module> sModule;
+
+  int skip_paren(stream_t &stream, int start)
 	{
 		int paren_pos = start;
 		int stack = 0;
@@ -477,12 +495,12 @@ namespace naruto
 	
 	llvm::Value * ASTInt::generate()
 	{
-		return nullptr;
+    return llvm::ConstantInt::get(sContext, llvm::APInt(64, (uint64_t) val));
 	}
 
 	llvm::Value * ASTFloat::generate()
 	{
-		return nullptr;
+    return llvm::ConstantFP::get(sContext, llvm::APFloat(val));
 	}
 
 	llvm::Value * ASTFnCall::generate()
