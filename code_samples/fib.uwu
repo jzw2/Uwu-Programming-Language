@@ -1,11 +1,11 @@
-fibonacci nth no jutsu 
+fibonacci : nth no jutsu 
 	nani start desu ga 0
-		sayonara 0 chan
+		sayonara 0 chan ~
 	baka nani start desu ga 1
-		sayonara 1 chan
+		sayonara 1 chan ~
 	~?
-	sayonara finonacci ( nth - 1 ) no jutsu + fibonacci nth - 2 no jutsu chan
+	sayonara finonacci : ( nth - 1 ) no jutsu + fibonacci : nth - 2 no jutsu chan ~
 !!
 senpai no jutsu
-	printf "%d\n" fibonacci 20 no jutsu no jutsu
+	printf : "%d\n" fibonacci : 20 no jutsu no jutsu ~
 ~!
