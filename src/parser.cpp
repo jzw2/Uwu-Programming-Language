@@ -158,12 +158,6 @@ namespace naruto
 
 	int ASTFnCall::parse(stream_t &stream, int start)
 	{
-		/*if(stream[start].isIden() && stream[start+1].code == TokenCodes::no_jutsu)
-		{
-			iden = new ASTIden();
-			start = iden->parse(stream, start);
-			return start + 1;
-		}*/
 		if(stream[start].isIden() && stream[start+1].isColon())
 		{
 			iden = new ASTIden();
@@ -436,17 +430,47 @@ namespace naruto
 
 	int ASTRetExpr::parse(stream_t &stream, int start)
 	{
-		return 0;
+		if(stream[start].code == TokenCodes::sayonara)
+		{
+			start++;
+			if(!stream[start].isDelim())
+			{
+				int end = ASTExpr::find_end_expression(stream, start)
+				if(stream[end].code != TokenCodes::chan)
+				{
+					return -1;
+				}
+				
+				expr = new ASTExpr();
+				return expr->parse(stream, start);
+			}
+			return start;
+		}
+		return -1;
 	}
 
 	int ASTVarDecl::parse(stream_t &stream, int start)
 	{
-		return 0;
+		if(stream[start].isIden())
+		{
+			name = new ASTIden();
+			start = name->parse(stream, start);
+			start++;
+			int end = ASTExpr::find_end_expression(stream, start)
+			if(stream[end].code != TokenCodes::desu)
+			{
+				return -1;
+			}
+				
+			val = new ASTExpr();
+			return val->parse(stream, start);
+		}
+		return -1;
 	}
 
 	int ASTSelState::parse(stream_t &stream, int start)
 	{
-		return 0;
+		
 	}
 
 	int ASTWhileState::parse(stream_t &stream, int start)

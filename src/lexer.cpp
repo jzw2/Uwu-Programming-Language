@@ -80,6 +80,12 @@ namespace naruto
 	
 	void naruto_lexize(std::string input, std::vector<Lex> & lexes)
 	{
+		int pos = 0;
+		if(input.substr(pos, 
+	}
+
+	void naruto_lexize(std::string input, std::vector<Lex> & lexes)
+	{
 		auto items = split(input);
 		for(int i = 0; i < items.size(); i++)
 		{

@@ -8,26 +8,33 @@ namespace naruto
 {
 	enum TokenCodes
 	{
-		identifier = 0,
-		int_val,
-		float_val,
-		no_jutsu,
-		//yosh, //treated as ints
-		//iee,
-		sayonara,
-		chan,
-		nani,
-		baka,
-		suki,
-		wa,
-		desu,
-		//desu_ga, are binary operators
-		//to,
-		bin_op,
-		paren_open,
-		paren_close,
-		colon,
-		delim
+		identifier = 0, //[a-Z][0-9a-Z]*
+		int_val, //(\+|\-)?[0-9]+
+		float_val, //(\+|\-)[0-9]+\.[0-9]+
+		no_jutsu, //no jutsu
+		//yosh, //treated as ints //yosh
+		//iee, //iee
+		sayonara, //sayonara
+		chan, //chan
+		nani, //nani
+		baka, //baka
+		doki, //doki
+		wa, //wa
+		desu, //desu
+		shadow_clone_jutsu, //shadow clone jutsu
+		//desu_ga, are binary operators //desu ga
+		//to, //to
+		bin_op, //this is anything that does not fit in another category
+		paren_open, //\(
+		paren_close, //\)
+		colon, //:
+		new_line, //\n
+		delim, //~
+		fn_delim, //!!
+		main_fn_delim, //~!
+		while_delim, //~~
+		if_delim, //~?
+		lambda_thread_delim //!!
 	};
 	
 	struct Lex
