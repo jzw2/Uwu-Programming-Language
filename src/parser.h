@@ -26,6 +26,7 @@ namespace naruto
 	class ASTNode
 	{	
 	public:
+
 		virtual int parse(stream_t &stream, int start) = 0;
 		virtual llvm::Value * generate() = 0;
 		virtual void print() = 0;

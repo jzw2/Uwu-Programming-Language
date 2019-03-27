@@ -506,67 +506,6 @@ namespace naruto
 		return 0;
 	}
 
-	//all the code gen functions
-	llvm::Value * ASTBinOp::generate()
-	{
-		return nullptr;
-	}
-	
-	llvm::Value * ASTIden::generate()
-	{
-		return nullptr;
-	}
-	
-	llvm::Value * ASTInt::generate()
-	{
-    return llvm::ConstantInt::get(sContext, llvm::APInt(64, (uint64_t) val));
-	}
-
-	llvm::Value * ASTFloat::generate()
-	{
-    return llvm::ConstantFP::get(sContext, llvm::APFloat(val));
-	}
-
-	llvm::Value * ASTFnCall::generate()
-	{
-		return nullptr;
-	}
-
-	llvm::Value * ASTExpr::generate()
-	{
-		return nullptr;
-	}
-
-	llvm::Value * ASTRetExpr::generate()
-	{
-		return nullptr;
-	}
-
-	llvm::Value * ASTVarDecl::generate()
-	{
-		return nullptr;
-	}
-
-	llvm::Value * ASTSelState::generate()
-	{
-		return nullptr;
-	}
-
-	llvm::Value * ASTWhileState::generate()
-	{
-		return nullptr;
-	}
-	
-	llvm::Value * ASTState::generate()
-	{
-		return nullptr;
-	}
-
-	llvm::Value * ASTFnDecl::generate()
-	{
-		return nullptr;
-	}
-
 	//all the print functions
 	void ASTBinOp::print()
 	{
