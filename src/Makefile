@@ -8,7 +8,7 @@ test : test_pre
 	
 
 test_pre : test.o lexer.o parser.o lexerUtils.o
-	$(LD) $(LDFLAGS) test.o lexer.o parser.o lexerUtils.o -o test
+	$(LD) $(LDFLAGS) test.o lexer.o parser.o lexerUtils.o `llvm-config --cxxflags --ldflags --system-libs --libs core` -o test
 
 test.o : test.cpp
 	$(CXX) $(CXXFLAGS) test.cpp
