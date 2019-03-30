@@ -1,6 +1,7 @@
 #include <iostream>
 #include <algorithm>
 #include <stack>
+#include <map>
 #include "parser.h"
 #include "lexerUtils.h"
 
@@ -26,6 +27,7 @@ namespace naruto
   llvm::LLVMContext sContext;
   llvm::IRBuilder<> sBuilder(sContext);
   std::unique_ptr<llvm::Module> sModule;
+  std::map<std::string, llvm::AllocaInst*> sLocals;
 
   int skip_paren(stream_t &stream, int start)
 	{
