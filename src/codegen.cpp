@@ -45,13 +45,18 @@ llvm::Value * ASTFloat::generate()
 
 llvm::Value * ASTFnCall::generate()
 {
-  return nullptr;
+  llvm::Function* func = sModule->getFunction(iden->getIden());
+  std::vector<llvm::Value*> args;
+  for (auto param : params) {
+    args.push_back(param->generate());
+  }
+  return sBuilder.CreateCall(func, args, "calling the function");
 }
 
 llvm::Value * ASTExpr::generate()
 {
 
-
+  //ok this one is going to be hard
   return nullptr;
 }
 
