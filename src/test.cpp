@@ -7,7 +7,7 @@
 //extern std::unique_ptr<llvm::Module> naruto::sModule;
 void intTest() {
   naruto::ASTInt a;
-  llvm::Value * 
+  
 
 }
 

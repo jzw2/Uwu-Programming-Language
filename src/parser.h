@@ -20,6 +20,7 @@ namespace naruto
   extern llvm::LLVMContext sContext;
   extern llvm::IRBuilder<> sBuilder;
   extern std::unique_ptr<llvm::Module> sModule;
+  extern std::map<std::string, llvm::AllocaInst*> sLocals;
 
 	typedef std::vector<Lex> stream_t;
 	extern int stream_pos;
@@ -50,6 +51,7 @@ namespace naruto
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
 		virtual void print() override;
+    std::string getIden() {return iden;}
 	};
 
 	class ASTInt : public ASTNode
