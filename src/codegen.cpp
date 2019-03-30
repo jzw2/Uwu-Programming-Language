@@ -57,6 +57,7 @@ llvm::Value * ASTExpr::generate()
 {
 
   //ok this one is going to be hard
+
   return nullptr;
 }
 
@@ -84,6 +85,9 @@ llvm::Value * ASTWhileState::generate()
 llvm::Value * ASTState::generate()
 {
 
+  if (retexpr) {
+    return retexpr->generate();
+  }
   return nullptr;
 }
 
@@ -120,4 +124,7 @@ llvm::Value * ASTFnDecl::generate()
   }
   return func;
 }
+  llvm::Value* ASTRoot::generate() {
+    return nullptr;
+  }
 }

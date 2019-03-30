@@ -24,8 +24,8 @@ namespace naruto
 			return "Nani";
 		case TokenCodes::baka:
 			return "Baka";
-		case TokenCodes::suki:
-			return "Suki";
+		// case TokenCodes::suki:
+		// 	return "Suki";
 		case TokenCodes::wa:
 			return "Wa";
 		case TokenCodes::desu:
