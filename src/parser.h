@@ -62,6 +62,7 @@ namespace naruto
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
 		virtual void print() override;
+    void setVal(long v) {val = v;}
 	};
 
 	class ASTFloat : public ASTNode
@@ -120,6 +121,9 @@ namespace naruto
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
 		virtual void print() override;
+
+    void setInt_V(ASTInt *i) {int_v = i;}
+    
 	};
 
 	class ASTRetExpr : public ASTNode

@@ -57,12 +57,18 @@ llvm::Value * ASTExpr::generate()
 {
 
   //ok this one is going to be hard
+  if (lhs) {
+    return lhs->generate();
+  } else if (int_v) {
+    return int_v->generate();
+  }
 
   return nullptr;
 }
 
 llvm::Value * ASTRetExpr::generate()
 {
+  
   return sBuilder.CreateRet(expr->generate());
 }
 
@@ -105,23 +111,24 @@ llvm::Value * ASTFnDecl::generate()
   llvm::Function* func = llvm::Function::Create(func_type, llvm::Function::ExternalLinkage, name->getIden(), sModule.get());
 
   //setup the names ofy the function
-  auto iter = func->args().begin(); //tbh idkw tahte the arg is for thi so you nheanh
-  for (int i = 0; i < params.size(); i++,iter++) {
-    auto& arg = *iter;
-    arg.setName(params[i]->getIden()); //
-    llvm::AllocaInst* alloc = CreateEntryBlockAlloca(func, arg.getName());
+  // auto iter = func->args().begin(); //tbh idkw tahte the arg is for thi so you nheanh
+  // for (int i = 0; i < params.size(); i++,iter++) {
+  //   auto& arg = *iter;
+  //   arg.setName(params[i]->getIden()); //
+  //   llvm::AllocaInst* alloc = CreateEntryBlockAlloca(func, arg.getName());
 
-    sBuilder.CreateStore(&arg, alloc);
-    sLocals[arg.getName()] = alloc;
-  }
+  //   sBuilder.CreateStore(&arg, alloc);
+  //   sLocals[arg.getName()] = alloc;
+  // }
 
   //creatirg fntuctiuon bady
-  llvm::BasicBlock *block = llvm::BasicBlock::Create(sContext, "entry", func);
+  llvm::BasicBlock *block = llvm::BasicBlock::Create(sContext, "plec that i need to endetr", func);
   //insert
   sBuilder.SetInsertPoint(block);
   for (auto state : body) {
     state->generate();
   }
+
   return func;
 }
   llvm::Value* ASTRoot::generate() {
