@@ -13,6 +13,7 @@
 #include "llvm/IR/Verifier.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/APInt.h"
+#include "llvm/IR/Instructions.h"
 
 //all the code gen functions
 namespace naruto {
@@ -25,7 +26,11 @@ llvm::Value * ASTBinOp::generate()
 	
 llvm::Value * ASTIden::generate()
 {
-  return nullptr;
+  
+  llvm::Value *v = sLocals[iden];
+
+  
+  return sBuilder.CreateLoad(v, iden.c_str());
 }
 	
 llvm::Value * ASTInt::generate()
@@ -45,6 +50,8 @@ llvm::Value * ASTFnCall::generate()
 
 llvm::Value * ASTExpr::generate()
 {
+
+
   return nullptr;
 }
 
@@ -55,6 +62,7 @@ llvm::Value * ASTRetExpr::generate()
 
 llvm::Value * ASTVarDecl::generate()
 {
+  
   return nullptr;
 }
 
@@ -70,11 +78,41 @@ llvm::Value * ASTWhileState::generate()
 	
 llvm::Value * ASTState::generate()
 {
+
   return nullptr;
 }
 
+  static llvm::AllocaInst* CreateEntryBlockAlloca(llvm::Function* func, const std::string& var_name) {
+    llvm::IRBuilder<> idk(&func->getEntryBlock(), func->getEntryBlock().begin());
+    return idk.CreateAlloca(llvm::Type::getDoubleTy(sContext), 0, var_name.c_str());
+  }
+
 llvm::Value * ASTFnDecl::generate()
 {
-  return nullptr;
+  std::vector<llvm::Type *> types(params.size(), llvm::Type::getInt32Ty(sContext)); //idk what type its going to be so for now evertyhin is an into
+  llvm::FunctionType *func_type = llvm::FunctionType::get(llvm::Type::getInt32Ty(sContext), types, false);
+
+  //created the function
+  llvm::Function* func = llvm::Function::Create(func_type, llvm::Function::ExternalLinkage, name->getIden(), sModule.get());
+
+  //setup the names ofy the function
+  auto iter = func->args().begin(); //tbh idkw tahte the arg is for thi so you nheanh
+  for (int i = 0; i < params.size(); i++,iter++) {
+    auto& arg = *iter;
+    arg.setName(params[i]->getIden()); //
+    llvm::AllocaInst* alloc = CreateEntryBlockAlloca(func, arg.getName());
+
+    sBuilder.CreateStore(&arg, alloc);
+    sLocals[arg.getName()] = alloc;
+  }
+
+  //creatirg fntuctiuon bady
+  llvm::BasicBlock *block = llvm::BasicBlock::Create(sContext, "entry", func);
+  //insert
+  sBuilder.SetInsertPoint(block);
+  for (auto state : body) {
+    state->generate();
+  }
+  return func;
 }
 }
