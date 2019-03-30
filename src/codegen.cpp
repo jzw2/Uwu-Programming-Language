@@ -21,6 +21,7 @@ namespace naruto {
 
 llvm::Value * ASTBinOp::generate()
 {
+  //nothing because it is all contained within the expression parser
   return nullptr;
 }
 	
@@ -57,10 +58,28 @@ llvm::Value * ASTExpr::generate()
 {
 
   //ok this one is going to be hard
-  if (lhs) {
+  if (op) {
+    auto left = lhs->generate();
+    auto right = rhs->generate();
+    if (op->getOp() == "+") {
+      return sBuilder.CreateAdd(left, right, "adding");
+    } else if (op->getOp() == "*") {
+      return sBuilder.CreateMul(left, right, "multiplying");
+    } else if (op->getOp() == "-") {
+      return sBuilder.CreateSub(left, right, "subtracting");
+    } else {
+      return nullptr; //uh oh
+    }
+  } else if (lhs) {
     return lhs->generate();
+  } else if (iden) {
+    return iden->generate();
   } else if (int_v) {
     return int_v->generate();
+  } else if (flt) {
+    return flt->generate();
+  } else if (call) {
+    return call->generate();
   }
 
   return nullptr;
@@ -74,7 +93,6 @@ llvm::Value * ASTRetExpr::generate()
 
 llvm::Value * ASTVarDecl::generate()
 {
-  
   return nullptr;
 }
 
@@ -104,8 +122,8 @@ llvm::Value * ASTState::generate()
 
 llvm::Value * ASTFnDecl::generate()
 {
-  std::vector<llvm::Type *> types(params.size(), llvm::Type::getInt32Ty(sContext)); //idk what type its going to be so for now evertyhin is an into
-  llvm::FunctionType *func_type = llvm::FunctionType::get(llvm::Type::getInt32Ty(sContext), types, false);
+  std::vector<llvm::Type *> types(params.size(), llvm::Type::getInt64Ty(sContext)); //idk what type its going to be so for now evertyhin is an into
+  llvm::FunctionType *func_type = llvm::FunctionType::get(llvm::Type::getInt64Ty(sContext), types, false);
 
   //created the function
   llvm::Function* func = llvm::Function::Create(func_type, llvm::Function::ExternalLinkage, name->getIden(), sModule.get());
