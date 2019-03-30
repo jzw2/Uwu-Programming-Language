@@ -26,7 +26,6 @@ namespace naruto
 	class ASTNode
 	{	
 	public:
-
 		virtual int parse(stream_t &stream, int start) = 0;
 		virtual llvm::Value * generate() = 0;
 		virtual void print() = 0;
@@ -124,6 +123,7 @@ namespace naruto
 	{
 		ASTExpr * expr;
 	public:
+		ASTRetExpr() : expr(nullptr) {}
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
 		virtual void print() override;
@@ -134,6 +134,8 @@ namespace naruto
 		ASTIden * name;
 		ASTExpr * val;
 	public:
+		ASTVarDecl() : name(nullptr),
+		val(nullptr) {}
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
 		virtual void print() override;
@@ -148,10 +150,10 @@ namespace naruto
 		std::vector<ASTState*> else_body;
 		ASTSelState * elif;
 	public:
-		ASTSelState() : expr(NULL), 
+		ASTSelState() : expr(nullptr), 
 		if_body(std::vector<ASTState*>()), 
 		else_body(std::vector<ASTState*>()), 
-		elif(NULL) {}
+		elif(nullptr) {}
 
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
@@ -163,7 +165,7 @@ namespace naruto
 		ASTExpr * expr;
 		std::vector<ASTState*> state;
 	public:
-		ASTWhileState() : expr(NULL),
+		ASTWhileState() : expr(nullptr),
 		state(std::vector<ASTState*>()) {}
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
@@ -178,11 +180,11 @@ namespace naruto
 		ASTRetExpr * retexpr;
 		ASTVarDecl * vdc;
 	public:
-		ASTState() : ws(NULL),
-		ss(NULL),
-		expr(NULL),
-		retexpr(NULL),
-		vdc(NULL) {} 
+		ASTState() : ws(nullptr),
+		ss(nullptr),
+		expr(nullptr),
+		retexpr(nullptr),
+		vdc(nullptr) {} 
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
 		virtual void print() override;
@@ -194,9 +196,19 @@ namespace naruto
 		std::vector<ASTIden*> params;
 		std::vector<ASTState*> body;
 	public:
-		ASTFnDecl() : name(NULL),
+		ASTFnDecl() : name(nullptr),
 		params(std::vector<ASTIden*>()),
 		body(std::vector<ASTState*>()) {}
+		virtual int parse(stream_t &stream, int start) override;
+		virtual llvm::Value * generate() override;
+		virtual void print() override;
+	};
+	
+	class ASTRoot : ASTNode
+	{
+		std::vector<ASTVarDecl*> globals;
+		std::vector<ASTFnDecl*> funcs;
+	public:
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
 		virtual void print() override;

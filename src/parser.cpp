@@ -265,9 +265,12 @@ namespace naruto
 		}
 		else if(fn_end != -1) 
 		{
-			if(stream[fn_end].isKeyword() |
+			if(stream[fn_end].isVal() |
+			stream[fn_end].isNoJutsu() |
 			stream[fn_end].isParenOpen() |
+			ASTFnCall::is_fn_call(stream, fn_end) |
 			stream[fn_end].isIden() |
+			stream[fn_end].isChan() |
 			stream[fn_end].isDelim())
 			{
 				return true;
@@ -275,7 +278,7 @@ namespace naruto
 		}
 		else
 		{
-			if(stream[start].isIden() | stream[start].isParenClose())
+			if(stream[start].isIden() | stream[start].isParenClose() | stream[start].isVal())
 			{
 				if(stream[start].isParenOpen())
 				{
@@ -304,10 +307,13 @@ namespace naruto
 				{
 					return true;
 				}
-				if(stream[start].isKeyword() |
+				if(stream[start].isNoJutsu() |
+				stream[start].isChan() |
 				stream[start].isParenOpen() |
 				stream[start].isIden() |
-				stream[start].isDelim())
+				stream[start].isDelim() |
+				ASTFnCall::is_fn_call(stream, start) |
+				stream[start].isVal())
 				{
 					return true;
 				}
@@ -340,12 +346,12 @@ namespace naruto
 		if(stream[start].isIntVal())
 		{
 			int_v = new ASTInt();
-				return int_v->parse(stream, start);
+			return int_v->parse(stream, start);
 		}
 		else if(stream[start].isFloatVal())
 		{
-				flt = new ASTFloat();
-				return flt->parse(stream, start);
+			flt = new ASTFloat();
+			return flt->parse(stream, start);
 		}
 		return -1;
 	}	
@@ -353,9 +359,14 @@ namespace naruto
 	int ASTExpr::parse_lvl(stream_t &stream, int start, int end, std::vector<std::vector<std::string> > delim, int level)
 	{
 		//find the highest level operator
+		if(level >= delim.size())
+		{
+			level = (int)delim.size() -1;
+		}
 		int next_pos = start;
 		while(true)
 		{
+
 			if(next_pos >= end) 
 			{
 				break;
@@ -447,13 +458,14 @@ namespace naruto
 			if(!stream[start].isDelim())
 			{
 				int end = ASTExpr::find_end_expression(stream, start);
-				if(stream[end].isChan())
+				if(!stream[end].isChan())
 				{
 					return -1;
 				}
 				
 				expr = new ASTExpr();
-				return expr->parse(stream, start);
+				start = expr->parse(stream, start);
+				return start+2; //+2 for chan and ~
 			}
 			return start;
 		}
@@ -509,7 +521,7 @@ namespace naruto
 					{
 						elif = new ASTSelState();
 						start = elif->parse(stream, start);
-						return start+1;
+						return start;
 					}
 					else
 					{
@@ -529,9 +541,13 @@ namespace naruto
 			}
 			else
 			{
-				delete expr; expr = NULL;
+				delete expr; expr = nullptr;
 				return -1;
 			}
+		}
+		else
+		{
+			return -1;
 		}
 	}
 
@@ -577,7 +593,7 @@ namespace naruto
 		else
 		{
 			expr = new ASTExpr();
-			return expr->parse(stream, start);
+			return expr->parse(stream, start) + 1;
 		}
 	}
 
@@ -597,7 +613,9 @@ namespace naruto
 			}
 			if(stream[start].isNoJutsu()) start++;
 			else return -1;
-			while(!stream[start].isFnDelim())
+			if(stream[start].isDelim()) start++;
+			else return -1;
+			while(start < (int)stream.size() && !stream[start].isFnDelim())
 			{
 				ASTState * statement =  new ASTState();
 				start = statement->parse(stream, start);
@@ -609,6 +627,30 @@ namespace naruto
 		{
 			return -1;
 		}
+	}
+
+	int ASTRoot::parse(stream_t &stream, int start)
+	{
+		while(start < stream.size()) 
+		{
+			if(start+1 < stream.size() && stream[start].isIden() && stream[start+1].isWa())
+			{
+				ASTVarDecl * vdc = new ASTVarDecl();
+				start = vdc->parse(stream, start);
+				globals.push_back(vdc);
+			}
+			else if(stream[start].isIden())
+			{
+				ASTFnDecl * func = new ASTFnDecl();
+				start = func->parse(stream, start);
+				funcs.push_back(func);
+			}
+			else
+			{
+				return -1;	
+			}
+		}
+		return start;
 	}
 
 	//all the print functions
@@ -656,31 +698,86 @@ namespace naruto
 
 	void ASTRetExpr::print()
 	{
-		
+		std::cout << "RETURN";
+		if(expr) expr->print();	else std::cout << "NULL";
 	}
 
 	void ASTVarDecl::print()
 	{
-		
+		if(name) name->print(); else std::cout << "NULL";
+		std::cout << "IS";
+		if(val) val->print(); else std::cout << "NULL";
 	}
 
 	void ASTSelState::print()
 	{
-		
+		std::cout << "IF ";
+		if(expr) expr->print(); else std::cout << "NULL";
+		std::cout << std::endl;
+		for(auto s : if_body)
+		{
+			s->print(); std::cout << std::endl;
+		}
+		std::cout << "ELSE " << std::endl;
+		if(elif) elif->print();
+		for(auto s : else_body)
+		{
+			s->print(); std::cout << std::endl;
+		}
+
+		std::cout << "END IF" << std::endl;
 	}
 
 	void ASTWhileState::print()
 	{
-		
+		std::cout << "WHILE ";
+		if(expr) expr->print(); else std::cout << "NULL";
+		for(auto s : state)
+		{
+			s->print(); std::cout << std::endl;
+		}
+		std::cout << "END WHILE ";
 	}
 	
 	void ASTState::print()
 	{
-		
+		if(ws) ws->print();	
+		if(ss) ss->print();	
+		if(expr) expr->print();	
+		if(retexpr) retexpr->print();	
+		if(vdc) vdc->print();	
 	}
 
 	void ASTFnDecl::print()
 	{
-		
+		std::cout << "FN ";
+		if(name) name->print(); else std::cout << "NULL" << std::endl;
+		for(auto p : params)
+		{
+			//std::cout << " " << std::endl;
+			p->print();
+		}
+		std::cout << " : FN BODY" << std::endl;
+		for(auto s : body)
+		{
+			s->print();
+			std::cout << std::endl;
+		}
+		std::cout << " " << std::endl;
+	}
+
+	void ASTRoot::print()
+	{
+		for(auto v : globals)
+		{
+			v->print();
+			std::cout << std::endl;
+		}
+		for(auto f : funcs)
+		{
+			f->print();
+			std::cout << std::endl;
+		}
+		std::cout << std::endl;
 	}
 }

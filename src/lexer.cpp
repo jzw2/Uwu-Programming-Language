@@ -135,7 +135,7 @@ namespace naruto
 			else if(item == ":") lexes.push_back(Lex(TokenCodes::colon));
 			else if(item == "~") lexes.push_back(Lex(TokenCodes::delim));
 			else if(item == "~~") lexes.push_back(Lex(TokenCodes::while_delim));
-			else if(item == "~!") lexes.push_back(Lex(TokenCodes::main_fn_delim));
+			else if(item == "~!") lexes.push_back(Lex(TokenCodes::fn_delim));
 			else if(item == "~?") lexes.push_back(Lex(TokenCodes::if_delim));
 			else if(item == "!!") lexes.push_back(Lex(TokenCodes::fn_delim));
 			else if(item == "(") lexes.push_back(Lex(TokenCodes::paren_open));
