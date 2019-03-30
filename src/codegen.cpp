@@ -26,7 +26,7 @@ llvm::Value * ASTBinOp::generate()
 	
 llvm::Value * ASTIden::generate()
 {
-  
+  //this does not look right at all
   llvm::Value *v = sLocals[iden];
 
   
@@ -62,7 +62,7 @@ llvm::Value * ASTExpr::generate()
 
 llvm::Value * ASTRetExpr::generate()
 {
-  return nullptr;
+  return sBuilder.CreateRet(expr->generate());
 }
 
 llvm::Value * ASTVarDecl::generate()
