@@ -70,7 +70,7 @@ llvm::Value * ASTExpr::generate()
     } else if (op->getOp() == "/") {
       return sBuilder.CreateSDiv(left, right, "diving");
     } else if (op->getOp() == "==") {
-      return  sBuilder.CreateICmpEq(left, right, "camping");
+      return  sBuilder.CreateICmpEQ(left, right, "camping");
     }else {
       return nullptr; //uh oh
     }
