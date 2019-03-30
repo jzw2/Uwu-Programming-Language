@@ -24,8 +24,8 @@ namespace naruto
 			return "Nani";
 		case TokenCodes::baka:
 			return "Baka";
-		case TokenCodes::suki:
-			return "Suki";
+		case TokenCodes::doki:
+			return "Doki";
 		case TokenCodes::wa:
 			return "Wa";
 		case TokenCodes::desu:
@@ -40,6 +40,18 @@ namespace naruto
 			return "Delim";
 		case TokenCodes::colon:
 			return ":";
+		case TokenCodes::new_line: 
+			return "\\n";
+		case TokenCodes::fn_delim: 
+			return "Fn Delim (!!)";
+		case TokenCodes::main_fn_delim: 
+			return "Main Fn Delim (~!)";
+		case TokenCodes::while_delim: 
+			return "While Delim (~~)";
+		case TokenCodes::if_delim: 
+			return "If Delim (~?)";
+		case TokenCodes::shadow_clone_jutsu: 
+			return "Shadow Clone";
 		default:
 			return "???";
 		}
