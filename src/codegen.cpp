@@ -67,7 +67,11 @@ llvm::Value * ASTExpr::generate()
       return sBuilder.CreateMul(left, right, "multiplying");
     } else if (op->getOp() == "-") {
       return sBuilder.CreateSub(left, right, "subtracting");
-    } else {
+    } else if (op->getOp() == "/") {
+      return sBuilder.CreateSDiv(left, right, "diving");
+    } else if (op->getOp() == "==") {
+      return  sBuilder.CreateICmpEq(left, right, "camping");
+    }else {
       return nullptr; //uh oh
     }
   } else if (lhs) {

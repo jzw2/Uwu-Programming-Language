@@ -36,7 +36,6 @@ void test1() {
   std::vector<naruto::Lex> stream = naruto::naruto_lexize_file("test.uwu");
   naruto::ASTFnDecl f;
   f.parse(stream, 0);
-  f.print();
   f.generate();
 
   llvm::raw_os_ostream file_stream(std::cout);

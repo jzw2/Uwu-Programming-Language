@@ -40,6 +40,7 @@ namespace naruto
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
 		virtual void print() override;
+    std::string getOp() {return op;}
 	};
 
 	class ASTIden : public ASTNode
