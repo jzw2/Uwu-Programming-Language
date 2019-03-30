@@ -4,6 +4,8 @@
 #include <string>
 #include <unordered_map>
 
+#define EMP_STR std::string("")
+
 namespace naruto
 {
 	enum TokenCodes
@@ -28,13 +30,13 @@ namespace naruto
 		paren_open, //\(
 		paren_close, //\)
 		colon, //:
+		delim, //~ 
 		new_line, //\n
-		delim, //~
 		fn_delim, //!!
 		main_fn_delim, //~!
 		while_delim, //~~
 		if_delim, //~?
-		lambda_thread_delim //!!
+		//lambda_thread_delim //!!
 	};
 	
 	struct Lex
@@ -46,14 +48,44 @@ namespace naruto
 		float_val(d) 
 		{}
 		
+		Lex(int c) : 
+		code(c), 
+		info(EMP_STR), 
+		int_val(0), 
+		float_val(0) 
+		{}
+
+		Lex(int c, std::string i) : 
+		code(c), 
+		info(i), 
+		int_val(0), 
+		float_val(0) 
+		{}
+
 		bool isKeyword();
 		bool isIden();
+		bool isVal();
+		bool isSayonara();
+		bool isNoJutsu();
+		bool isChan();
+		bool isBaka();
+		bool isNani();
+		bool isDoki();
+		bool isWa();
+		bool isDesu();
 		bool isOp();
 		bool isParenOpen();
 		bool isParenClose();
 		bool isDelim();
-		bool isVal();
+		bool isFloatVal();
+		bool isIntVal();
 		bool isColon();
+		bool isNewline();
+		bool isFnDelim();
+		bool isMainFnDelim();
+		bool isWhileDelim();
+		bool isIfDelim();
+		bool isThreadDelim();
 
 		int code;
 		std::string info;

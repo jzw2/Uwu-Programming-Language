@@ -78,7 +78,7 @@ namespace naruto
 	int ASTBinOp::parse(stream_t &stream, int start)
 	{
 		ASSERT_BOUNDS(stream, start);
-		if(stream[start].code == TokenCodes::bin_op)
+		if(stream[start].isOp())
 		{
 			op = stream[start].info;
 			return start + 1;
@@ -92,7 +92,7 @@ namespace naruto
 	int ASTIden::parse(stream_t &stream, int start)
 	{
 		ASSERT_BOUNDS(stream, start);
-		if(stream[start].code == TokenCodes::identifier)
+		if(stream[start].isIden())
 		{
 			iden = stream[start].info;
 			return start + 1;
@@ -106,7 +106,7 @@ namespace naruto
 	int ASTInt::parse(stream_t &stream, int start)
 	{
 		ASSERT_BOUNDS(stream, start);
-		if(stream[start].code == TokenCodes::int_val)
+		if(stream[start].isIntVal())
 		{
 			val = stream[start].int_val;
 			return start + 1;
@@ -120,7 +120,7 @@ namespace naruto
 	int ASTFloat::parse(stream_t &stream, int start)
 	{
 		ASSERT_BOUNDS(stream, start);
-		if(stream[start].code == TokenCodes::float_val)
+		if(stream[start].isFloatVal())
 		{
 			val = stream[start].float_val;
 			return start + 1;
@@ -139,11 +139,7 @@ namespace naruto
 			start++;
 			if(start >= (int)stream.size())
 				return -1;
-			/*if(stream[start].code == TokenCodes::no_jutsu)
-			{
-				return start+1;
-			}
-			else*/ if(stream[start].isColon())
+			if(stream[start].isColon())
 			{
 				for(; start < (int)stream.size(); start++)
 				{
@@ -158,7 +154,7 @@ namespace naruto
 							start = get_end_fn_call(stream, start);
 						}
 					}
-					else if(stream[start].code == TokenCodes::no_jutsu)
+					else if(stream[start].isNoJutsu())
 					{
 						return start+1;
 					}
@@ -187,7 +183,7 @@ namespace naruto
 				{
 					return -1;
 				}
-				else if(stream[next_pos].code == TokenCodes::no_jutsu)
+				else if(stream[next_pos].isNoJutsu())
 				{
 					break;
 				}
@@ -341,18 +337,15 @@ namespace naruto
 			iden = new ASTIden();
 			return iden->parse(stream, start);
 		}
-		else if(stream[start].isVal())
+		if(stream[start].isIntVal())
 		{
-			if(stream[start].code == TokenCodes::int_val)
-			{
-				int_v = new ASTInt();
+			int_v = new ASTInt();
 				return int_v->parse(stream, start);
-			}
-			else
-			{
+		}
+		else if(stream[start].isFloatVal())
+		{
 				flt = new ASTFloat();
 				return flt->parse(stream, start);
-			}
 		}
 		return -1;
 	}	
@@ -430,7 +423,7 @@ namespace naruto
 				next_pos++;
 			}
 		}
-		if(level == (int)(delim.size() - 1))
+		if(level == (((int)delim.size()) - 1))
 		{
 			return end;
 		}
@@ -448,13 +441,13 @@ namespace naruto
 
 	int ASTRetExpr::parse(stream_t &stream, int start)
 	{
-		if(stream[start].code == TokenCodes::sayonara)
+		if(stream[start].isSayonara())
 		{
 			start++;
 			if(!stream[start].isDelim())
 			{
-				int end = ASTExpr::find_end_expression(stream, start)
-				if(stream[end].code != TokenCodes::chan)
+				int end = ASTExpr::find_end_expression(stream, start);
+				if(stream[end].isChan())
 				{
 					return -1;
 				}
@@ -474,36 +467,148 @@ namespace naruto
 			name = new ASTIden();
 			start = name->parse(stream, start);
 			start++;
-			int end = ASTExpr::find_end_expression(stream, start)
-			if(stream[end].code != TokenCodes::desu)
+			int end = ASTExpr::find_end_expression(stream, start);
+			if(stream[end].isDesu())
 			{
-				return -1;
-			}
-				
-			val = new ASTExpr();
-			return val->parse(stream, start);
+				val = new ASTExpr();
+				start = val->parse(stream, start);
+				start++;
+				while(stream[start].isNewline())
+				{
+					start++;
+				}
+				if(stream[start].isDelim())
+				{
+					return start+1;
+				}
+			}	
 		}
 		return -1;
 	}
 
 	int ASTSelState::parse(stream_t &stream, int start)
 	{
-		
+		if(stream[start].isNani()) 
+		{
+			start++;
+			expr = new ASTExpr();
+			start = expr->parse(stream, start);
+			if(stream[start].isDelim())
+			{
+				start++;
+				while(!stream[start].isBaka() && !stream[start].isIfDelim()) 
+				{
+					ASTState * statement = new ASTState();
+					start = statement->parse(stream, start);
+					if_body.push_back(statement);
+				}
+				if(stream[start].isBaka())
+				{
+					start++;
+					if(stream[start].isNani())
+					{
+						elif = new ASTSelState();
+						start = elif->parse(stream, start);
+						return start+1;
+					}
+					else
+					{
+						while(!stream[start].isIfDelim()) 
+						{
+							ASTState * statement = new ASTState();
+							start = statement->parse(stream, start);
+							else_body.push_back(statement);
+						}
+						return start +1;
+					}
+				}
+				else if(stream[start].isIfDelim())
+				{
+					return start+1;
+				}
+			}
+			else
+			{
+				delete expr; expr = NULL;
+				return -1;
+			}
+		}
 	}
 
 	int ASTWhileState::parse(stream_t &stream, int start)
 	{
-		return 0;
+		if(stream[start].isDoki()) 
+		{
+			while(!stream[start].isWhileDelim())
+			{
+				ASTState * statement = new ASTState();
+				start = statement->parse(stream, start);
+			}
+			return start+1;
+		}
+		else
+		{
+			return -1;
+		}
 	}
 	
 	int ASTState::parse(stream_t &stream, int start)
 	{
-		return 0;
+		if(stream[start].isNani()) 
+		{
+			ss = new ASTSelState();
+			return ss->parse(stream, start);
+		}
+		else if(stream[start].isDoki())
+		{
+			ws = new ASTWhileState();
+			return ws->parse(stream, start);
+		}
+		else if(stream[start].isSayonara()) 
+		{
+			retexpr = new ASTRetExpr();
+			return retexpr->parse(stream, start);
+		}
+		else if(start+1 < stream.size() && stream[start].isIden() && stream[start+1].isWa())
+		{
+			vdc = new ASTVarDecl();
+			return vdc->parse(stream, start);
+		}
+		else
+		{
+			expr = new ASTExpr();
+			return expr->parse(stream, start);
+		}
 	}
 
 	int ASTFnDecl::parse(stream_t &stream, int start)
 	{
-		return 0;
+		if(stream[start].isIden())
+		{
+			name = new ASTIden();
+			start = name->parse(stream, start);
+			if(stream[start].isColon()) start++;
+			else return -1; //fail for now, this is how grammar has it
+			while(!stream[start].isNoJutsu()) 
+			{
+				ASTIden * param = new ASTIden();
+				start = param->parse(stream, start);
+				params.push_back(param);
+			}
+			if(stream[start].isNoJutsu()) start++;
+			else return -1;
+			while(!stream[start].isFnDelim())
+			{
+				ASTState * statement =  new ASTState();
+				start = statement->parse(stream, start);
+				body.push_back(statement);
+			}
+			return start+1;
+		}
+		else
+		{
+			return -1;
+		}
 	}
 
 	//all the print functions

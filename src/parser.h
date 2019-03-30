@@ -148,6 +148,11 @@ namespace naruto
 		std::vector<ASTState*> else_body;
 		ASTSelState * elif;
 	public:
+		ASTSelState() : expr(NULL), 
+		if_body(std::vector<ASTState*>()), 
+		else_body(std::vector<ASTState*>()), 
+		elif(NULL) {}
+
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
 		virtual void print() override;
@@ -158,6 +163,8 @@ namespace naruto
 		ASTExpr * expr;
 		std::vector<ASTState*> state;
 	public:
+		ASTWhileState() : expr(NULL),
+		state(std::vector<ASTState*>()) {}
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
 		virtual void print() override;
@@ -165,12 +172,17 @@ namespace naruto
 
 	class ASTState : ASTNode
 	{
-		ASTWhileState ws;
-		ASTSelState ss;
+		ASTWhileState * ws;
+		ASTSelState * ss;
 		ASTExpr * expr;
 		ASTRetExpr * retexpr;
 		ASTVarDecl * vdc;
 	public:
+		ASTState() : ws(NULL),
+		ss(NULL),
+		expr(NULL),
+		retexpr(NULL),
+		vdc(NULL) {} 
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
 		virtual void print() override;
@@ -182,6 +194,9 @@ namespace naruto
 		std::vector<ASTIden*> params;
 		std::vector<ASTState*> body;
 	public:
+		ASTFnDecl() : name(NULL),
+		params(std::vector<ASTIden*>()),
+		body(std::vector<ASTState*>()) {}
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
 		virtual void print() override;

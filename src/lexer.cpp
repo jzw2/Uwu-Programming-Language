@@ -1,10 +1,11 @@
 #include <cctype>
 #include <fstream>
 #include <iostream>
+#include <regex>
+#include <vector>
 
 #include "lexer.h"
 
-#define EMP_STR std::string("")
 
 namespace naruto
 {	
@@ -16,177 +17,173 @@ namespace naruto
 		code == TokenCodes::no_jutsu |
 		code == TokenCodes::nani |
 		code == TokenCodes::baka |
-		code == TokenCodes::suki |
+		code == TokenCodes::doki |
 		code == TokenCodes::wa |
 		code == TokenCodes::desu;
 	}
 	
-	bool Lex::isIden()
-	{
-		return code == TokenCodes::identifier;
-	}
-	bool Lex::isOp()
-	{
-		return code == TokenCodes::bin_op;
-	}
-	bool Lex::isParenOpen()
-	{
-		return code == TokenCodes::paren_open;
-	}
-	bool Lex::isParenClose()
-	{
-		return code == TokenCodes::paren_close;
-	}
-	bool Lex::isDelim()
-	{
-		return code  == TokenCodes::delim;
-	}
-	bool Lex::isVal()
-	{
+	bool Lex::isIden() { return code == TokenCodes::identifier; }
+	bool Lex::isOp() { return code == TokenCodes::bin_op; }
+	bool Lex::isParenOpen() { return code == TokenCodes::paren_open; }
+	bool Lex::isParenClose() { return code == TokenCodes::paren_close; }
+	bool Lex::isDelim() { return code == TokenCodes::delim; }
+	bool Lex::isVal() {
 		return 
 		code == TokenCodes::float_val |
 		code == TokenCodes::int_val;
 	}
-	bool Lex::isColon()
-	{
-		return code == TokenCodes::colon;
+	bool Lex::isColon() { return code == TokenCodes::colon; }
+	bool Lex::isSayonara() { return code == TokenCodes::sayonara; }
+	bool Lex::isNoJutsu() { return code == TokenCodes::no_jutsu; }
+	bool Lex::isChan() { return code == TokenCodes::chan; }
+	bool Lex::isBaka() { return code == TokenCodes::baka; }
+	bool Lex::isNani() { return code == TokenCodes::nani; }
+	bool Lex::isDoki() { return code == TokenCodes::doki; }
+	bool Lex::isWa() { return code == TokenCodes::wa; }
+	bool Lex::isDesu() { return code == TokenCodes::desu; }
+	bool Lex::isNewline() { return code == TokenCodes::new_line; }
+	bool Lex::isFnDelim() { return code == TokenCodes::fn_delim; }
+	bool Lex::isMainFnDelim() { return code == TokenCodes::main_fn_delim; }
+	bool Lex::isWhileDelim() { return code == TokenCodes::while_delim; }
+	bool Lex::isIfDelim() { return code == TokenCodes::if_delim; }
+	bool Lex::isThreadDelim() { return code == TokenCodes::fn_delim; }
+	bool Lex::isFloatVal() { return code == TokenCodes::float_val; }
+	bool Lex::isIntVal() { return code == TokenCodes::int_val; }
+
+	inline bool should_lex(std::string input) {
+		return input.length() && input != " " && input != "	" && input != "\n";
 	}
-	
-	std::vector<std::string> split(std::string input)
+
+	void lex_list(std::string input, std::vector<std::string> &split, std::vector<Lex> & lexes, 
+	std::vector<std::string> &regex_words, std::vector<std::string> &words, int word)
 	{
-		std::vector<std::string> output;
-		std::string delim_space = " ";
-		std::string delim_tab = "	";
-		
-		size_t current;
-		size_t next = -1;
-		size_t pos_next = 0;
-		
-		do
+		if(word >= regex_words.size())
 		{
-			current = next + 1;
-			next = input.find_first_of(delim_tab, current);
-			pos_next = input.find_first_of(delim_space, current);
-			if(next != std::string::npos && pos_next != std::string::npos)
-				next = next < pos_next ? next : pos_next;
-			else if(next == std::string::npos)
-				next = pos_next;
-			output.push_back(input.substr(current, next - current));
-			//std::cout << input.substr(current, next - current) << std::endl;
+			if(should_lex(input)) 
+				split.push_back(input);
+			return;
 		}
-		while (next != std::string::npos);
-		return output;
-	}
-	
-	void naruto_lexize(std::string input, std::vector<Lex> & lexes)
-	{
-		int pos = 0;
-		if(input.substr(pos, 
+		if(regex_words[word].length() < 3)
+		{
+			size_t current = 0;
+			size_t next = 0;
+			do {
+				next = input.find(regex_words[word], current);
+				if(next == std::string::npos) next = input.length();
+				lex_list(input.substr(current, next - current), split, lexes, 
+						regex_words, words, word+1);
+				if(next != input.length() && should_lex(words[word])) 
+					split.push_back(words[word]);
+				current = next + std::string(words[word]).length();
+			}
+			while(current < input.length());
+		}
+		else
+		{
+			std::smatch m;
+			std::regex e(regex_words[word]);
+			std::vector<size_t> positions;	
+			auto search_temp = input;
+			size_t g_pos = 0;
+			while(std::regex_search(search_temp, m, e)) 
+			{
+				positions.push_back(m.position(0) + g_pos);
+				search_temp = m.suffix().str();
+				g_pos += m.length() + m.position(0);
+			}
+			positions.push_back(std::string::npos);
+		
+			size_t current = 0;
+			size_t next = 0;
+			size_t i = 0;
+			do {
+				next = positions[i++];
+				if(next == std::string::npos) next = input.length();
+				lex_list(input.substr(current, next - current), split, lexes, 
+						regex_words, words, word+1);
+				if(next != input.length() && should_lex(words[word])) 
+					split.push_back(words[word]);
+				//-4 comes from the \b \b
+				current = next + std::string(regex_words[word]).length() - 4; 
+			}
+			while(current < input.length());
+		}
 	}
 
 	void naruto_lexize(std::string input, std::vector<Lex> & lexes)
 	{
-		auto items = split(input);
-		for(int i = 0; i < items.size(); i++)
-		{
-			if(items[i] == "")
-				continue;
-			else if(items[i] == "no") 
-			{
-				if(i < items.size() && items[i+1] == "jutsu")
-				{
-					lexes.push_back(Lex(TokenCodes::no_jutsu, EMP_STR, 0, 0));
-					i++;
-				}
-			}
-			else if(items[i] == ":")
-				lexes.push_back(Lex(TokenCodes::colon, EMP_STR, 0, 0));
-			else if(items[i] == "yosh")
-				lexes.push_back(Lex(TokenCodes::int_val, EMP_STR, 1, 0));
-			else if(items[i] == "iee")
-				lexes.push_back(Lex(TokenCodes::int_val, EMP_STR, 0, 0));
-			else if(items[i] == "sayonara")
-				lexes.push_back(Lex(TokenCodes::sayonara, EMP_STR, 0, 0));
-			else if(items[i] == "chan")
-				lexes.push_back(Lex(TokenCodes::chan, EMP_STR, 0, 0));
-			else if(items[i] == "nani")
-				lexes.push_back(Lex(TokenCodes::nani, EMP_STR, 0, 0));
-			else if(items[i] == "baka")
-				lexes.push_back(Lex(TokenCodes::baka, EMP_STR, 0, 0));
-			else if(items[i] == "suki")
-				lexes.push_back(Lex(TokenCodes::suki, EMP_STR, 0, 0));
-			else if(items[i] == "wa")
-				lexes.push_back(Lex(TokenCodes::wa, EMP_STR, 0, 0));
-			else if(items[i] == "desu")
-			{
-				if(i < items.size() && items[i+1] == "ga")
-				{
-					lexes.push_back(Lex(TokenCodes::bin_op, "==", 0, 0));
-					i++;
-				}
-				else
-				{	
-					lexes.push_back(Lex(TokenCodes::desu, EMP_STR, 0, 0));
-				}
-			}
-			else if(items[i] == "to")
-				lexes.push_back(Lex(TokenCodes::bin_op, "&&", 0, 0));
-			else if(items[i] == "\n" || 
-			items[i] == "~" || 
-			items[i] == "~~" || 
-			items[i] == "~?" ||
-			items[i] == "~!")
-				lexes.push_back(Lex(TokenCodes::delim, EMP_STR, 0, 0));
-			else if(isdigit(items[i][0]) ||
-			(items[i].size() > 1 && items[i][0] == '-' && isdigit(items[i][0])))
-			{
-				if(items[i].find(".") != std::string::npos)
-				{
+		std::vector<std::string> regex_words = {"\n", 
+		"\\bno jutsu\\b", "\\bshadow clone jutsu\\b", "\\bdesu ga\\b", 
+		" ", "	", ":", "~~", "~?", "~!", "!!", "~",
+		"\\bdoki\\b", "\\bnani\\b", "\\bbaka\\b", "\\bnamae\\b", "\\bdesu\\b", "\\bwa\\b", 
+		"\\bsayonara\\b", "\\bchan\\b",
+		"(", ")", "+", "-", "*", "/", "%", "<<", ">>", ">=", "<=", "||", ">", "<"};
+		std::vector<std::string> words = {"\n", 
+		"no jutsu", "shadow clone jutsu", "desu ga", 
+		" ", "	", ":", "~~", "~?", "~!", "!!", "~",
+		"doki", "nani", "baka", "namae", "desu", "wa", 
+		"sayonara", "chan",
+		"(", ")", "+", "-", "*", "/", "%", "<<", ">>", ">=", "<=", "||", ">", "<"};
+		std::vector<std::string> items;
+		lex_list(input, items, lexes, regex_words, words, 0);
+		for(auto item : items) {
+			if(item == "\n")
+				std::cout << "'\\n'" << std::endl;
+			else
+				std::cout << (int)(item.c_str()[0]) << ": '" << item << "'" << std::endl;
+			if(item == "\n") lexes.push_back(Lex(TokenCodes::new_line));
+			else if(item == ":") lexes.push_back(Lex(TokenCodes::colon));
+			else if(item == "~") lexes.push_back(Lex(TokenCodes::delim));
+			else if(item == "~~") lexes.push_back(Lex(TokenCodes::while_delim));
+			else if(item == "~!") lexes.push_back(Lex(TokenCodes::main_fn_delim));
+			else if(item == "~?") lexes.push_back(Lex(TokenCodes::if_delim));
+			else if(item == "!!") lexes.push_back(Lex(TokenCodes::fn_delim));
+			else if(item == "(") lexes.push_back(Lex(TokenCodes::paren_open));
+			else if(item == ")") lexes.push_back(Lex(TokenCodes::paren_close));
+			else if(item == "shadow clone jutsu") 
+				lexes.push_back(Lex(TokenCodes::shadow_clone_jutsu));
+			else if(item == "desu") lexes.push_back(Lex(TokenCodes::desu));
+			else if(item == "nani") lexes.push_back(Lex(TokenCodes::nani));
+			else if(item == "baka") lexes.push_back(Lex(TokenCodes::baka));
+			else if(item == "wa") lexes.push_back(Lex(TokenCodes::wa));
+			else if(item == "no jutsu") lexes.push_back(Lex(TokenCodes::no_jutsu));
+			else if(item == "chan") lexes.push_back(Lex(TokenCodes::chan));
+			else if(item == "sayonara") lexes.push_back(Lex(TokenCodes::sayonara));
+			else if(item == "desu ga") 
+				lexes.push_back(Lex(TokenCodes::bin_op, "=="));
+			else if(item == "to") lexes.push_back(Lex(TokenCodes::bin_op, "&&"));
+			else if(item == "-") lexes.push_back(Lex(TokenCodes::bin_op, "-"));
+			else if(item == "+") lexes.push_back(Lex(TokenCodes::bin_op, "+"));
+			else if(isdigit(item[0])) {
+				if(item.find(".", 0) != std::string::npos)
 					lexes.push_back(Lex(TokenCodes::float_val, 
-					EMP_STR, 0, 
-					std::stod(items[i])));
-				}
+										EMP_STR, 0, stod(item)));
 				else
-				{
 					lexes.push_back(Lex(TokenCodes::int_val, 
-					EMP_STR, 
-					std::stoi(items[i]), 0));
-
-				}
+										EMP_STR, stol(item), 0));
 			}
-			else if(items[i][0] == '(')
-			{	
-				lexes.push_back(Lex(TokenCodes::paren_open, EMP_STR, 0, 0));
-			}
-			else if(items[i][0] == ')')
-			{	
-				lexes.push_back(Lex(TokenCodes::paren_close, EMP_STR, 0, 0));
-			}
-			else if(isalpha(items[i][0]))
-			{	
-				lexes.push_back(Lex(TokenCodes::identifier, items[i], 0, 0));
-			}
-			else	
-				lexes.push_back(Lex(TokenCodes::bin_op, items[i], 0, 0));
+			else if(isalpha(item[0])) 
+				lexes.push_back(Lex(TokenCodes::identifier, item));
+			else lexes.push_back(Lex(TokenCodes::bin_op, item));
 		}
 	}
-	
+		
 	std::vector<Lex> naruto_lexize_file(std::string input_file)
 	{
-		std::string line;
-		std::ifstream file(input_file);
-		std::vector<Lex> out;
-		if(file.is_open())
+		std::ifstream in(input_file, std::ios::in | std::ios::binary);
+		if (in)
 		{
-			while(getline(file, line))
-			{
-				naruto_lexize(line, out);
-				out.push_back(Lex(TokenCodes::delim, EMP_STR, 0, 0));
-			}
-			file.close();
+			std::string contents;
+			in.seekg(0, std::ios::end);
+			contents.resize(in.tellg());
+			in.seekg(0, std::ios::beg);
+			in.read(&contents[0], contents.size());
+			in.close();
+			std::vector<Lex> out;
+			naruto_lexize(contents, out);
+			return out;
 		}
-		
-		return out;
+		throw(errno);
 	}
 }
 
