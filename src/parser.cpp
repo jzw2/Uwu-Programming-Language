@@ -132,7 +132,20 @@ namespace naruto
 			return -1;
 		}	
 	}
-
+	
+	int ASTString::parse(stream_t &stream, int start)
+	{
+		ASSERT_BOUNDS(stream, start);
+		if(stream[start].isStrVal())
+		{
+			str = stream[start].info.substr(1, stream[start].info.length()-2);
+			return start + 1;
+		}
+		else
+		{
+			return -1;
+		}	
+	}
 	//returns the index of the thing right after the fn call
 	int ASTFnCall::get_end_fn_call(stream_t &stream, int start)
 	{
@@ -140,8 +153,10 @@ namespace naruto
 		{
 			start++;
 			if(start >= (int)stream.size())
+			{
 				return -1;
-			if(stream[start].isColon())
+			}
+			else if(stream[start].isColon())
 			{
 				for(; start < (int)stream.size(); start++)
 				{
@@ -156,7 +171,7 @@ namespace naruto
 							start = get_end_fn_call(stream, start);
 						}
 					}
-					else if(stream[start].isNoJutsu())
+					if(stream[start].isNoJutsu())
 					{
 						return start+1;
 					}
@@ -273,7 +288,8 @@ namespace naruto
 			ASTFnCall::is_fn_call(stream, fn_end) |
 			stream[fn_end].isIden() |
 			stream[fn_end].isChan() |
-			stream[fn_end].isDelim())
+			stream[fn_end].isDelim() |
+			stream[fn_end].isStrVal())
 			{
 				return true;
 			}
@@ -354,6 +370,11 @@ namespace naruto
 		{
 			flt = new ASTFloat();
 			return flt->parse(stream, start);
+		}
+		else if(stream[start].isStrVal())
+		{
+			str = new ASTString();
+			return str->parse(stream, start);
 		}
 		return -1;
 	}	
@@ -661,6 +682,11 @@ namespace naruto
 		std::cout << " " << op << " ";
 	}
 	
+	void ASTString::print()
+	{
+		std::cout << " " << str << " ";
+	}
+
 	void ASTIden::print()
 	{
 		std::cout << " " << iden << " ";
@@ -695,6 +721,7 @@ namespace naruto
 		if(flt) flt->print();
 		if(int_v) int_v->print();
 		if(call) call->print();
+		if(str) str->print();
 		std::cout << " )";
 	}
 

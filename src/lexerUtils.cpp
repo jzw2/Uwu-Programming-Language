@@ -14,6 +14,8 @@ namespace naruto
 			return "Int Val";
 		case TokenCodes::float_val:
 			return "Float Val";
+		case TokenCodes::string_val:
+			return "String";
 		case TokenCodes::no_jutsu:
 			return "No Jutsu";
 		case TokenCodes::sayonara:

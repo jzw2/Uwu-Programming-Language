@@ -74,6 +74,16 @@ namespace naruto
 		virtual void print() override;
 	};
 
+	class ASTString : public ASTNode
+	{
+		std::string str;
+	public:
+		ASTString() : str(EMP_STR) {}
+		virtual int parse(stream_t &stream, int start) override;
+		virtual llvm::Value * generate() override;
+		virtual void print() override;
+	};
+
 	class ASTExpr;
 	
 	class ASTFnCall : public ASTNode
@@ -100,6 +110,7 @@ namespace naruto
 		ASTFloat * flt;
 		ASTInt * int_v;
 		ASTFnCall * call;
+		ASTString * str;
 		//specify a level to parse at
 		int parse_lvl(stream_t &stream, 
 			int start, 
@@ -116,6 +127,7 @@ namespace naruto
 			iden(nullptr), 
 			flt(nullptr), 
 			int_v(nullptr), 
+			str(nullptr), 
 			call(nullptr) {}
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
