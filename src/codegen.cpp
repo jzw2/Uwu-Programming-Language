@@ -44,6 +44,13 @@ llvm::Value * ASTFloat::generate()
   return llvm::ConstantFP::get(sContext, llvm::APFloat(val));
 }
 
+llvm::Value * ASTString::generate()
+{
+  //idk just spit ballin' here, pls fix john
+  //return llvm::ConstantString::get(sContext, llvm::APFloat(val));
+  return nullptr;
+}
+
 llvm::Value * ASTFnCall::generate()
 {
   llvm::Function* func = sModule->getFunction(iden->getIden());
@@ -109,7 +116,12 @@ llvm::Value * ASTWhileState::generate()
 {
   return nullptr;
 }
-	
+
+llvm::Value * ASTLambdaThread::generate()
+{
+  return nullptr;
+}
+
 llvm::Value * ASTState::generate()
 {
 

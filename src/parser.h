@@ -193,6 +193,18 @@ namespace naruto
 		virtual void print() override;
 	};
 
+	class ASTLambdaThread : ASTNode
+	{
+		ASTExpr * expr;
+		std::vector<ASTState*> state;
+	public:
+		ASTLambdaThread() : expr(nullptr),
+		state(std::vector<ASTState*>()) {}
+		virtual int parse(stream_t &stream, int start) override;
+		virtual llvm::Value * generate() override;
+		virtual void print() override;
+	};
+
 	class ASTState : ASTNode
 	{
 		ASTWhileState * ws;
@@ -200,11 +212,13 @@ namespace naruto
 		ASTExpr * expr;
 		ASTRetExpr * retexpr;
 		ASTVarDecl * vdc;
+		ASTLambdaThread * thread;
 	public:
 		ASTState() : ws(nullptr),
 		ss(nullptr),
 		expr(nullptr),
 		retexpr(nullptr),
+		thread(nullptr),
 		vdc(nullptr) {} 
 
 		void setRetExpr(ASTRetExpr *r) {retexpr = r;}
@@ -230,6 +244,7 @@ namespace naruto
 		virtual void print() override;
 	};
 	
+
 	class ASTRoot : ASTNode
 	{
 		std::vector<ASTVarDecl*> globals;

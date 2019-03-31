@@ -48,12 +48,17 @@ namespace naruto
 	bool Lex::isWhileDelim() { return code == TokenCodes::while_delim; }
 	bool Lex::isIfDelim() { return code == TokenCodes::if_delim; }
 	bool Lex::isThreadDelim() { return code == TokenCodes::fn_delim; }
+	bool Lex::isShadowCloneJutsu() { return code == TokenCodes::shadow_clone_jutsu; }
 	bool Lex::isFloatVal() { return code == TokenCodes::float_val; }
 	bool Lex::isIntVal() { return code == TokenCodes::int_val; }
 	bool Lex::isStrVal() { return code == TokenCodes::string_val; }
 
 	inline bool should_lex(std::string input) {
-		return input.length() > 0 && input != " " && input != "	" && input != "\n";
+		return input.length() > 0 
+		&& input.substr(0, 5) != "(OwO)"
+		&& input != " " 
+		&& input != "	" 
+		&& input != "\n";
 	}
 
 	void lex_list(std::string input, std::vector<std::string> &split, 
@@ -81,7 +86,7 @@ namespace naruto
 
 	void naruto_lexize(std::string input, std::vector<Lex> & lexes)
 	{
-		std::vector<std::string> regex_words = {"\\n", "\".*\"", 
+		std::vector<std::string> regex_words = {"\\(OwO\\).*\\(T_T\\)", "\".*\"", "\\n", 
 		"\\bno jutsu\\b", "\\bshadow clone jutsu\\b", "\\bdesu ga\\b", 
 		" ", "\\t", ":", "~~", "~\\?", "~!", "!!", "~",
 		"\\bdoki\\b", "\\bnani\\b", "\\bbaka\\b", "\\bnamae\\b", "\\bdesu\\b", "\\bwa\\b", 
@@ -109,6 +114,7 @@ namespace naruto
 			else if(item == "desu") lexes.push_back(Lex(TokenCodes::desu));
 			else if(item == "nani") lexes.push_back(Lex(TokenCodes::nani));
 			else if(item == "baka") lexes.push_back(Lex(TokenCodes::baka));
+			else if(item == "doki") lexes.push_back(Lex(TokenCodes::doki));
 			else if(item == "wa") lexes.push_back(Lex(TokenCodes::wa));
 			else if(item == "no jutsu") lexes.push_back(Lex(TokenCodes::no_jutsu));
 			else if(item == "chan") lexes.push_back(Lex(TokenCodes::chan));

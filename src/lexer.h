@@ -88,6 +88,7 @@ namespace naruto
 		bool isWhileDelim();
 		bool isIfDelim();
 		bool isThreadDelim();
+		bool isShadowCloneJutsu();
 
 		int code;
 		std::string info;

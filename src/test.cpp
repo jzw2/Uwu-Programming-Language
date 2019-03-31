@@ -45,8 +45,9 @@ int main(void)
 {
   //naruto::sModule = llvm::make_unique<llvm::Module>("module", naruto::sContext);
   //test1();
-	std::string input = "../code_samples/fib.uwu";
-	std::string expr = "printf: \"%d\\n\" fib: nth no jutsu no jutsu~";
+	std::string input = "../code_samples/factorial.uwu";
+	//std::string input = "test.uwu";
+	std::string expr = "temp wa temp*((n/10)*namae + 1) desu~";
 	std::vector<naruto::Lex> lexes;
 	lexes = naruto::naruto_lexize_file(input);
 	//naruto::naruto_lexize(expr, lexes);
@@ -58,9 +59,9 @@ int main(void)
 		i++;
 	}
 
-	//naruto::ASTExpr * expression = new naruto::ASTExpr();
-	//expression->parse(lexes, 0);
-	//expression->print();
+	/*naruto::ASTState state;
+	state.parse(lexes, 0);
+	state.print();*/
 	naruto::ASTRoot file;
 	file.parse(lexes, 0);
 	file.print();

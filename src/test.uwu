@@ -1,3 +1,9 @@
-fibonacci: nth no jutsu~ 
-	sayonara 2 chan~
-!!
+	shadow clone jutsu 10~ (OwO) start 9 threads (T_T)
+		i wa 0 desu~
+		temp wa 1.0 desu~
+		doki ((n/10)*namae + i < ((n/10)*(namae+1)))~
+			temp wa temp*((n/10)*namae + 1) desu~
+			i wa i+1 desu~
+		~~
+		result wa temp*result desu~
+	!!
