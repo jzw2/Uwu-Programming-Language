@@ -17,10 +17,10 @@
 
 namespace naruto
 {
-  extern llvm::LLVMContext sContext;
-  extern llvm::IRBuilder<> sBuilder;
-  extern std::unique_ptr<llvm::Module> sModule;
-  extern std::map<std::string, llvm::AllocaInst*> sLocals;
+	extern llvm::LLVMContext sContext;
+	extern llvm::IRBuilder<> sBuilder;
+	extern std::unique_ptr<llvm::Module> sModule;
+	extern std::map<std::string, llvm::AllocaInst*> sLocals;
 
 	typedef std::vector<Lex> stream_t;
 	extern int stream_pos;
@@ -40,7 +40,7 @@ namespace naruto
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
 		virtual void print() override;
-    std::string getOp() {return op;}
+		std::string getOp() {return op;}
 	};
 
 	class ASTIden : public ASTNode
@@ -51,8 +51,8 @@ namespace naruto
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
 		virtual void print() override;
-    std::string getIden() {return iden;}
-    void setIden(std::string s) {iden = s;}
+		std::string getIden() {return iden;}
+		void setIden(std::string s) {iden = s;}
 	};
 
 	class ASTInt : public ASTNode
@@ -63,7 +63,7 @@ namespace naruto
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
 		virtual void print() override;
-    void setVal(long v) {val = v;}
+		void setVal(long v) {val = v;}
 	};
 
 	class ASTFloat : public ASTNode
@@ -135,15 +135,15 @@ namespace naruto
 		virtual llvm::Value * generate() override;
 		virtual void print() override;
 
-    void setInt_V(ASTInt *i) {int_v = i;}
-    
+		void setInt_V(ASTInt *i) {int_v = i;}
+		
 	};
 
 	class ASTRetExpr : public ASTNode
 	{
 		ASTExpr * expr;
 	public:
-    void setExpr(ASTExpr *e) {expr = e;}
+		void setExpr(ASTExpr *e) {expr = e;}
 		ASTRetExpr() : expr(nullptr) {}
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
@@ -207,7 +207,7 @@ namespace naruto
 		retexpr(nullptr),
 		vdc(nullptr) {} 
 
-    void setRetExpr(ASTRetExpr *r) {retexpr = r;}
+		void setRetExpr(ASTRetExpr *r) {retexpr = r;}
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
 		virtual void print() override;
@@ -222,9 +222,9 @@ namespace naruto
 		ASTFnDecl() : name(nullptr),
 		params(std::vector<ASTIden*>()),
 		body(std::vector<ASTState*>()) {}
-    void setName(ASTIden *n) {name = n;}
-    std::vector<ASTIden*>& getParams() {return params;}
-    std::vector<ASTState*>& getBody() {return body;}
+		void setName(ASTIden *n) {name = n;}
+		std::vector<ASTIden*>& getParams() {return params;}
+		std::vector<ASTState*>& getBody() {return body;}
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
 		virtual void print() override;
