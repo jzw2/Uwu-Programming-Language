@@ -5,28 +5,38 @@
 
 #include <iostream>
 
-
-
 extern llvm::LLVMContext naruto::sContext;
 extern std::unique_ptr<llvm::Module> naruto::sModule;
 void test1() {
-  naruto::ASTRetExpr expr;
+  // naruto::ASTInt six;
+  // six.setVal(69);
 
-  naruto::ASTState state;
-  state.setRetExpr(&expr);
+  // naruto::ASTExpr six_expr;
+  // six_expr.setInt_V(&six);
 
-  naruto::ASTIden name;
-  name.setIden("testfunc");
+  // naruto::ASTRetExpr expr;
+  // expr.setExpr(&six_expr);
 
-  naruto::ASTFnDecl func;
-  func.setName(&name);
+  // naruto::ASTState state;
+  // state.setRetExpr(&expr);
 
-  auto params = func.getParams(); //params should be void
+  // naruto::ASTIden name;
+  // name.setIden("testfunc");
+
+  // naruto::ASTFnDecl func;
+  // func.setName(&name);
+
+  // auto params = func.getParams(); //params should be void
   
-  auto body = func.getBody();
-  body.push_back(&state);
+  // auto body = func.getBody();
+  // body.push_back(&state);
 
-  func.generate();
+  // func.generate();
+
+  std::vector<naruto::Lex> stream = naruto::naruto_lexize_file("test.uwu");
+  naruto::ASTFnDecl f;
+  f.parse(stream, 0);
+  f.generate();
 
   llvm::raw_os_ostream file_stream(std::cout);
   naruto::sModule->print(file_stream, nullptr);

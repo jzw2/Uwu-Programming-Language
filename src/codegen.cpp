@@ -21,6 +21,7 @@ namespace naruto {
 
 llvm::Value * ASTBinOp::generate()
 {
+  //nothing because it is all contained within the expression parser
   return nullptr;
 }
 	
@@ -57,18 +58,45 @@ llvm::Value * ASTExpr::generate()
 {
 
   //ok this one is going to be hard
+  if (op) {
+    auto left = lhs->generate();
+    auto right = rhs->generate();
+    if (op->getOp() == "+") {
+      return sBuilder.CreateAdd(left, right, "adding");
+    } else if (op->getOp() == "*") {
+      return sBuilder.CreateMul(left, right, "multiplying");
+    } else if (op->getOp() == "-") {
+      return sBuilder.CreateSub(left, right, "subtracting");
+    } else if (op->getOp() == "/") {
+      return sBuilder.CreateSDiv(left, right, "diving");
+    } else if (op->getOp() == "==") {
+      return  sBuilder.CreateICmpEQ(left, right, "camping");
+    }else {
+      return nullptr; //uh oh
+    }
+  } else if (lhs) {
+    return lhs->generate();
+  } else if (iden) {
+    return iden->generate();
+  } else if (int_v) {
+    return int_v->generate();
+  } else if (flt) {
+    return flt->generate();
+  } else if (call) {
+    return call->generate();
+  }
 
   return nullptr;
 }
 
 llvm::Value * ASTRetExpr::generate()
 {
+  
   return sBuilder.CreateRet(expr->generate());
 }
 
 llvm::Value * ASTVarDecl::generate()
 {
-  
   return nullptr;
 }
 
@@ -98,30 +126,31 @@ llvm::Value * ASTState::generate()
 
 llvm::Value * ASTFnDecl::generate()
 {
-  std::vector<llvm::Type *> types(params.size(), llvm::Type::getInt32Ty(sContext)); //idk what type its going to be so for now evertyhin is an into
-  llvm::FunctionType *func_type = llvm::FunctionType::get(llvm::Type::getInt32Ty(sContext), types, false);
+  std::vector<llvm::Type *> types(params.size(), llvm::Type::getInt64Ty(sContext)); //idk what type its going to be so for now evertyhin is an into
+  llvm::FunctionType *func_type = llvm::FunctionType::get(llvm::Type::getInt64Ty(sContext), types, false);
 
   //created the function
   llvm::Function* func = llvm::Function::Create(func_type, llvm::Function::ExternalLinkage, name->getIden(), sModule.get());
 
   //setup the names ofy the function
-  auto iter = func->args().begin(); //tbh idkw tahte the arg is for thi so you nheanh
-  for (int i = 0; i < params.size(); i++,iter++) {
-    auto& arg = *iter;
-    arg.setName(params[i]->getIden()); //
-    llvm::AllocaInst* alloc = CreateEntryBlockAlloca(func, arg.getName());
+  // auto iter = func->args().begin(); //tbh idkw tahte the arg is for thi so you nheanh
+  // for (int i = 0; i < params.size(); i++,iter++) {
+  //   auto& arg = *iter;
+  //   arg.setName(params[i]->getIden()); //
+  //   llvm::AllocaInst* alloc = CreateEntryBlockAlloca(func, arg.getName());
 
-    sBuilder.CreateStore(&arg, alloc);
-    sLocals[arg.getName()] = alloc;
-  }
+  //   sBuilder.CreateStore(&arg, alloc);
+  //   sLocals[arg.getName()] = alloc;
+  // }
 
   //creatirg fntuctiuon bady
-  llvm::BasicBlock *block = llvm::BasicBlock::Create(sContext, "entry", func);
+  llvm::BasicBlock *block = llvm::BasicBlock::Create(sContext, "plec that i need to endetr", func);
   //insert
   sBuilder.SetInsertPoint(block);
   for (auto state : body) {
     state->generate();
   }
+
   return func;
 }
   llvm::Value* ASTRoot::generate() {
