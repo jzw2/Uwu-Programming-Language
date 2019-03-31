@@ -476,7 +476,6 @@ namespace naruto
 	int ASTExpr::parse(stream_t &stream, int start)
 	{
 		int end = find_end_expression(stream, start);
-		std::cout << "End: " << end << std::endl;
 		return parse_lvl(stream, start, end, precedence, 0);
 	}
 
@@ -511,7 +510,6 @@ namespace naruto
 			if(stream[start].isWa()) start++;
 			else return -1;
 			int end = ASTExpr::find_end_expression(stream, start);
-			std::cout << "found end (" << end << ")" << std::endl;
 			if(stream[end].isDesu())
 			{
 				val = new ASTExpr();
@@ -586,20 +584,14 @@ namespace naruto
 			start++;
 			expr = new ASTExpr();
 			start = expr->parse(stream, start);
-			//std::cout << "DOKI EXPR: " << std::endl;
-			//expr->print();
-			//std::cout << std::endl;
 			if(stream[start].isDelim())
 			{
 				start++;
 				while(start < stream.size() && !stream[start].isWhileDelim())
 				{
 					ASTState * statement = new ASTState();
-					//std::cout << "(Doki) Start parse at (" << start << ")" << std::endl;
 					start = statement->parse(stream, start);
 					state.push_back(statement);
-					//statement->print(); std::cout << std::endl;
-					//std::cout << "(Doki) End last parse (" << start << ")" << std::endl;
 				}
 				if(start >= stream.size())
 				{
@@ -621,21 +613,14 @@ namespace naruto
 			start++;
 			expr = new ASTExpr();
 			start = expr->parse(stream, start);
-			//std::cout << "THEAD EXPR: " << std::endl;
-			//expr->print();
-			//std::cout << std::endl;
 			if(stream[start].isDelim())
 			{
 				start++;
 				while(start < stream.size() && !stream[start].isThreadDelim())
 				{
 					ASTState * statement = new ASTState();
-					//std::cout << "(Thread) Start parse at (" << start << ")" << std::endl;
 					start = statement->parse(stream, start);
 					state.push_back(statement);
-					//statement->print(); std::cout << std::endl;
-					//std::cout << "(Thread) End last parse (" << start << ")" << std::endl;
-					//if(start == 0) exit(0);
 				}
 				if(start >= stream.size())
 				{
