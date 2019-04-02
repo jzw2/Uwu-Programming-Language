@@ -9,7 +9,9 @@
 
 <float> ::= <integer> "." <integer>
 
-<function-declaration> ::= <identifier> <identifier>* "no jutsu" (<delimiter>) (<statement>)* "!!"
+<function-declaration> ::= <identifier> "-" <type> ":" (<identifier> "-" <type>)* "no jutsu" (<delimiter>) 
+						(<statement>)* 
+						"!!"
 
 <function-call> ::= <identifier> ":" <expr>+ "no jutsu"
 
@@ -43,7 +45,11 @@
 		| <variable-declaration>
 		| <lambda-thread>
 
-<variable-declaration> ::= <identifier> "wa" <expr> "desu" <delimiter>
+<type> ::= "san"
+		| "kun"
+		| "sama"
+
+<variable-declaration> ::= <identifier> "-" <type>  "wa" <expr> "desu" <delimiter>
 
 //must expand this!
 <binary-operator> ::= "desu ga" 

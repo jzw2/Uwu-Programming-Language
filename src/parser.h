@@ -46,12 +46,16 @@ namespace naruto
 	class ASTIden : public ASTNode
 	{
 		std::string iden;
+		std::string type;
 	public:
-		ASTIden() : iden(std::string()) {}
+		ASTIden() : iden(std::string()), type(std::string()) {}
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
 		virtual void print() override;
 		std::string getIden() {return iden;}
+		bool isFloat() {return type == "float";}
+		bool isInt() {return type == "int";}
+		bool isString() {return type == "string";}
 		void setIden(std::string s) {iden = s;}
 	};
 

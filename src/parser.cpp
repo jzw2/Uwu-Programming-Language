@@ -20,18 +20,18 @@
 #include "llvm/IR/Verifier.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/APInt.h"
-#define IS_EOF(stream, start) (start >=  (int)stream.size())
+#define IS_EOF(stream, start) (start >=	(int)stream.size())
 #define ASSERT_BOUNDS(stream, start) if(start >= (int)stream.size()) return stream.size(); else if(start == -1) return -1;
 #define RESET(obj) delete obj; obj = nullptr;
 namespace naruto
 {
-  
-  llvm::LLVMContext sContext;
-  llvm::IRBuilder<> sBuilder(sContext);
-  std::unique_ptr<llvm::Module> sModule;
-  std::map<std::string, llvm::AllocaInst*> sLocals;
+	
+	llvm::LLVMContext sContext;
+	llvm::IRBuilder<> sBuilder(sContext);
+	std::unique_ptr<llvm::Module> sModule;
+	std::map<std::string, llvm::AllocaInst*> sLocals;
 
-  int skip_paren(stream_t &stream, int start)
+	int skip_paren(stream_t &stream, int start)
 	{
 		int paren_pos = start;
 		int stack = 0;
@@ -99,7 +99,32 @@ namespace naruto
 		if(stream[start].isIden())
 		{
 			iden = stream[start].info;
-			return start + 1;
+			if(start+1 < stream.size()) 
+			{
+				if(stream[start+1].isSan()) 
+				{
+					type = "int";
+					return start + 2;
+				}
+				else if(stream[start+1].isKun()) 
+				{
+					type = "float";
+					return start + 2;
+				}
+				else if(stream[start+1].isSama()) 
+				{
+					type = "string";
+					return start + 2;
+				}
+				else
+				{
+					return start + 1;
+				}
+			}
+			else
+			{
+				return -1;
+			}
 		}
 		else
 		{
@@ -692,7 +717,7 @@ namespace naruto
 			else return -1;
 			while(start < (int)stream.size() && !stream[start].isFnDelim())
 			{
-				ASTState * statement =  new ASTState();
+				ASTState * statement = new ASTState();
 				start = statement->parse(stream, start);
 				body.push_back(statement);
 			}
@@ -741,7 +766,7 @@ namespace naruto
 
 	void ASTIden::print()
 	{
-		std::cout << " " << iden << " ";
+		std::cout << " " << type << " : " << iden << " ";
 	}
 	
 	void ASTInt::print()

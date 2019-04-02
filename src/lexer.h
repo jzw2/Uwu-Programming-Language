@@ -19,6 +19,10 @@ namespace naruto
 		//iee, //iee
 		sayonara, //sayonara
 		chan, //chan
+		san, //int type
+		kun, //float type
+		sama, //string type
+		senpai,
 		nani, //nani
 		baka, //baka
 		doki, //doki
@@ -69,6 +73,10 @@ namespace naruto
 		bool isSayonara();
 		bool isNoJutsu();
 		bool isChan();
+		bool isSenpai();
+		bool isSama();
+		bool isKun();
+		bool isSan();
 		bool isBaka();
 		bool isNani();
 		bool isDoki();

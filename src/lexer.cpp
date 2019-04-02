@@ -37,6 +37,10 @@ namespace naruto
 	bool Lex::isSayonara() { return code == TokenCodes::sayonara; }
 	bool Lex::isNoJutsu() { return code == TokenCodes::no_jutsu; }
 	bool Lex::isChan() { return code == TokenCodes::chan; }
+	bool Lex::isSan() { return code == TokenCodes::san; }
+	bool Lex::isKun() { return code == TokenCodes::kun; }
+	bool Lex::isSama() { return code == TokenCodes::sama; }
+	bool Lex::isSenpai() { return code == TokenCodes::senpai; }
 	bool Lex::isBaka() { return code == TokenCodes::baka; }
 	bool Lex::isNani() { return code == TokenCodes::nani; }
 	bool Lex::isDoki() { return code == TokenCodes::doki; }
@@ -90,7 +94,7 @@ namespace naruto
 		"\\bno jutsu\\b", "\\bshadow clone jutsu\\b", "\\bdesu ga\\b", 
 		" ", "\\t", ":", "~~", "~\\?", "~!", "!!", "~",
 		"\\bdoki\\b", "\\bnani\\b", "\\bbaka\\b", "\\bnamae\\b", "\\bdesu\\b", "\\bwa\\b", 
-		"\\bsayonara\\b", "\\bchan\\b",
+		"\\bsayonara\\b", "\\bchan\\b", /*"\\bsenpai\\b",*/ "\\b-san\\b", "\\b-kun\\b", "\\b-sama\\b",
 		"\\(", "\\)", "\\+", "-", "\\*", "/", "%", "<<", ">>", ">=", "<=", "\\|\\|", ">", "<"};
 		std::vector<std::string> items(0);
 		lex_list(input, items, regex_words, 0);
@@ -118,6 +122,10 @@ namespace naruto
 			else if(item == "wa") lexes.push_back(Lex(TokenCodes::wa));
 			else if(item == "no jutsu") lexes.push_back(Lex(TokenCodes::no_jutsu));
 			else if(item == "chan") lexes.push_back(Lex(TokenCodes::chan));
+			else if(item == "-san") lexes.push_back(Lex(TokenCodes::san));
+			else if(item == "-kun") lexes.push_back(Lex(TokenCodes::kun));
+			else if(item == "-sama") lexes.push_back(Lex(TokenCodes::sama));
+			//else if(item == "senpai") lexes.push_back(Lex(TokenCodes::senpai));
 			else if(item == "sayonara") lexes.push_back(Lex(TokenCodes::sayonara));
 			else if(item == "desu ga") 
 				lexes.push_back(Lex(TokenCodes::bin_op, "=="));
