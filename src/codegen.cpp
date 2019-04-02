@@ -27,9 +27,8 @@ llvm::Value * ASTBinOp::generate()
 	
 llvm::Value * ASTIden::generate()
 {
-  //this does not look right at all
+  //i think thi will work
   llvm::Value *v = sLocals[iden];
-
   
   return sBuilder.CreateLoad(v, iden.c_str());
 }
@@ -94,10 +93,24 @@ llvm::Value * ASTRetExpr::generate()
   
   return sBuilder.CreateRet(expr->generate());
 }
-
-llvm::Value * ASTVarDecl::generate()
+  //not really declaration, rather it is assignment
+  //if it has not been used before, create it 
+  llvm::Value * ASTVarDecl::generate() 
 {
-  return nullptr;
+  llvm::AllocaInst *alloc;
+
+  // Store the initial value into the alloca.
+  if (sLocals.count(name->getIden())) {
+    
+    alloc = sLocals[name->getIden()];
+    return sBuilder.CreateStore(val->generate(), alloc);
+  } else {
+    alloc = sBuilder.CreateAlloca(llvm::Type::getInt64Ty(sContext), val->generate());
+    sLocals[name->getIden()] = alloc;
+  }
+
+  // Add arguments to variable symbol table.
+  return alloc;
 }
 
 llvm::Value * ASTSelState::generate()
@@ -119,10 +132,10 @@ llvm::Value * ASTState::generate()
   return nullptr;
 }
 
-  static llvm::AllocaInst* CreateEntryBlockAlloca(llvm::Function* func, const std::string& var_name) {
-    llvm::IRBuilder<> idk(&func->getEntryBlock(), func->getEntryBlock().begin());
-    return idk.CreateAlloca(llvm::Type::getDoubleTy(sContext), 0, var_name.c_str());
-  }
+static llvm::AllocaInst* CreateEntryBlockAlloca(llvm::Function* func, const std::string& var_name) {
+  llvm::IRBuilder<> idk(&func->getEntryBlock(), func->getEntryBlock().begin());
+  return idk.CreateAlloca(llvm::Type::getDoubleTy(sContext), 0, var_name.c_str());
+}
 
 llvm::Value * ASTFnDecl::generate()
 {
@@ -132,21 +145,22 @@ llvm::Value * ASTFnDecl::generate()
   //created the function
   llvm::Function* func = llvm::Function::Create(func_type, llvm::Function::ExternalLinkage, name->getIden(), sModule.get());
 
-  //setup the names ofy the function
-  // auto iter = func->args().begin(); //tbh idkw tahte the arg is for thi so you nheanh
-  // for (int i = 0; i < params.size(); i++,iter++) {
-  //   auto& arg = *iter;
-  //   arg.setName(params[i]->getIden()); //
-  //   llvm::AllocaInst* alloc = CreateEntryBlockAlloca(func, arg.getName());
-
-  //   sBuilder.CreateStore(&arg, alloc);
-  //   sLocals[arg.getName()] = alloc;
-  // }
 
   //creatirg fntuctiuon bady
   llvm::BasicBlock *block = llvm::BasicBlock::Create(sContext, "plec that i need to endetr", func);
   //insert
   sBuilder.SetInsertPoint(block);
+  //setup the names ofy the function
+  for (auto &arg : func->args()) {
+    // Create an alloca for this variable.
+    llvm::AllocaInst *alloc = CreateEntryBlockAlloca(func, arg.getName());
+
+    // Store the initial value into the alloca.
+    sBuilder.CreateStore(&arg, alloc);
+
+    // Add arguments to variable symbol table.
+    sLocals[arg.getName()] = alloc;
+  }
   for (auto state : body) {
     state->generate();
   }
