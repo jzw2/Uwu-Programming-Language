@@ -39,6 +39,16 @@ llvm::Value * ASTFloat::generate()
 llvm::Value * ASTFnCall::generate()
 {
   llvm::Function* func = sModule->getFunction(iden->getIden());
+  if (func == nullptr) {
+    if (iden->getIden() == "puts") {
+      //pro hack
+      
+      std::vector<llvm::Type *> putsArgs;
+      putsArgs.push_back(sBuilder.getInt8Ty()->getPointerTo());
+      llvm::FunctionType *putsType = llvm::FunctionType::get(sBuilder.getInt32Ty(), putsArgs, false);
+      func = llvm::Function::Create(putsType, llvm::Function::ExternalLinkage, "puts", sModule.get());
+    }
+  }
   std::vector<llvm::Value*> args;
   for (auto param : params) {
     args.push_back(param->generate());
@@ -76,6 +86,8 @@ llvm::Value * ASTExpr::generate()
     return flt->generate();
   } else if (call) {
     return call->generate();
+  } else if (str) {
+    return str->generate();
   }
 
   return nullptr;
@@ -119,10 +131,19 @@ llvm::Value * ASTWhileState::generate()
 llvm::Value * ASTState::generate()
 {
 
+
   if (retexpr) {
     return retexpr->generate();
   } else if (vdc){
     return vdc->generate();
+  } else if (expr) {
+    return expr->generate();
+  } else if (ws) {
+    return ws->generate();
+  } else if (ss) {
+    return ss->generate();
+  } else if (thread) {
+    return thread->generate();
   }
   return nullptr;
 }
@@ -142,10 +163,11 @@ llvm::Value * ASTFnDecl::generate()
 
 
   //creatirg fntuctiuon bady
-  llvm::BasicBlock *block = llvm::BasicBlock::Create(sContext, "plec that i need to endetr", func);
+  llvm::BasicBlock *block = llvm::BasicBlock::Create(sContext, "entry point", func);
   //insert
   sBuilder.SetInsertPoint(block);
   //SETUP the names ofy the function
+  int index = 0;
   for (auto &arg : func->args()) {
     // Create an alloca for this variable.
     llvm::AllocaInst *alloc = CreateEntryBlockAlloca(func, arg.getName());
@@ -154,6 +176,7 @@ llvm::Value * ASTFnDecl::generate()
     sBuilder.CreateStore(&arg, alloc);
 
     // Add arguments to variable symbol table.
+    arg.setName(params[index]->getIden());
     sLocals[arg.getName()] = alloc;
   }
   for (auto state : body) {

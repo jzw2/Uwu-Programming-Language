@@ -1,0 +1,8 @@
+test : a b c no jutsu~
+		i wa 0 desu~
+		temp wa 1.0 desu~
+		result wa temp desu~
+		temp wa 1.0 * result desu~
+		temp wa 1.0 * result desu~
+		temp wa 1.0 * result desu~
+	!!

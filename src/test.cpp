@@ -45,7 +45,7 @@ void test1() {
 
 void test2() {
   naruto::sModule = llvm::make_unique<llvm::Module>("module", naruto::sContext);
-  std::vector<naruto::Lex> stream = naruto::naruto_lexize_file("test2.uwu");
+  std::vector<naruto::Lex> stream = naruto::naruto_lexize_file("test3.uwu");
   naruto::ASTFnDecl f;
   f.parse(stream, 0);
   f.generate();
