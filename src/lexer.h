@@ -13,6 +13,7 @@ namespace naruto
 		identifier = 0, //[a-Z][0-9a-Z]*
 		int_val, //(\+|\-)?[0-9]+
 		float_val, //(\+|\-)[0-9]+\.[0-9]+
+		string_val,
 		no_jutsu, //no jutsu
 		//yosh, //treated as ints //yosh
 		//iee, //iee
@@ -79,6 +80,7 @@ namespace naruto
 		bool isDelim();
 		bool isFloatVal();
 		bool isIntVal();
+		bool isStrVal();
 		bool isColon();
 		bool isNewline();
 		bool isFnDelim();
@@ -86,6 +88,7 @@ namespace naruto
 		bool isWhileDelim();
 		bool isIfDelim();
 		bool isThreadDelim();
+		bool isShadowCloneJutsu();
 
 		int code;
 		std::string info;

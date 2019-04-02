@@ -17,13 +17,7 @@
 
 //all the code gen functions
 namespace naruto {
-  
-
-llvm::Value * ASTBinOp::generate()
-{
-  //nothing because it is all contained within the expression parser
-  return nullptr;
-}
+		
 	
 llvm::Value * ASTIden::generate()
 {

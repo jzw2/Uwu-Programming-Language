@@ -2,6 +2,8 @@
 #include <algorithm>
 #include <stack>
 #include <map>
+#include <cstdlib>
+
 #include "parser.h"
 #include "lexerUtils.h"
 
@@ -132,7 +134,20 @@ namespace naruto
 			return -1;
 		}	
 	}
-
+	
+	int ASTString::parse(stream_t &stream, int start)
+	{
+		ASSERT_BOUNDS(stream, start);
+		if(stream[start].isStrVal())
+		{
+			str = stream[start].info.substr(1, stream[start].info.length()-2);
+			return start + 1;
+		}
+		else
+		{
+			return -1;
+		}	
+	}
 	//returns the index of the thing right after the fn call
 	int ASTFnCall::get_end_fn_call(stream_t &stream, int start)
 	{
@@ -140,8 +155,10 @@ namespace naruto
 		{
 			start++;
 			if(start >= (int)stream.size())
+			{
 				return -1;
-			if(stream[start].isColon())
+			}
+			else if(stream[start].isColon())
 			{
 				for(; start < (int)stream.size(); start++)
 				{
@@ -156,7 +173,7 @@ namespace naruto
 							start = get_end_fn_call(stream, start);
 						}
 					}
-					else if(stream[start].isNoJutsu())
+					if(stream[start].isNoJutsu())
 					{
 						return start+1;
 					}
@@ -211,7 +228,7 @@ namespace naruto
 		{
 			if(next_pos >= (int)stream.size())
 				return stream.size();
-			else if(is_end_expression(stream, next_pos))
+			if(is_end_expression(stream, next_pos))
 				break;
 
 			if(stream[next_pos].isParenOpen())
@@ -261,6 +278,7 @@ namespace naruto
 			return true;
 		}
 		int fn_end = ASTFnCall::get_end_fn_call(stream, start);
+
 		if(fn_end >= (int)stream.size())
 		{
 			return true;
@@ -269,18 +287,20 @@ namespace naruto
 		{
 			if(stream[fn_end].isVal() |
 			stream[fn_end].isNoJutsu() |
+			stream[start].isDesu() |
 			stream[fn_end].isParenOpen() |
 			ASTFnCall::is_fn_call(stream, fn_end) |
 			stream[fn_end].isIden() |
 			stream[fn_end].isChan() |
-			stream[fn_end].isDelim())
+			stream[fn_end].isDelim() |
+			stream[fn_end].isStrVal())
 			{
 				return true;
 			}
 		}
 		else
 		{
-			if(stream[start].isIden() | stream[start].isParenClose() | stream[start].isVal())
+			if(stream[start].isIden() | stream[start].isParenOpen() | stream[start].isVal())
 			{
 				if(stream[start].isParenOpen())
 				{
@@ -309,10 +329,12 @@ namespace naruto
 				{
 					return true;
 				}
+
 				if(stream[start].isNoJutsu() |
 				stream[start].isChan() |
 				stream[start].isParenOpen() |
 				stream[start].isIden() |
+				stream[start].isDesu() |
 				stream[start].isDelim() |
 				ASTFnCall::is_fn_call(stream, start) |
 				stream[start].isVal())
@@ -354,6 +376,11 @@ namespace naruto
 		{
 			flt = new ASTFloat();
 			return flt->parse(stream, start);
+		}
+		else if(stream[start].isStrVal())
+		{
+			str = new ASTString();
+			return str->parse(stream, start);
 		}
 		return -1;
 	}	
@@ -449,7 +476,7 @@ namespace naruto
 	int ASTExpr::parse(stream_t &stream, int start)
 	{
 		int end = find_end_expression(stream, start);
-		return parse_lvl(stream, start, find_end_expression(stream, start), precedence, 0);
+		return parse_lvl(stream, start, end, precedence, 0);
 	}
 
 	int ASTRetExpr::parse(stream_t &stream, int start)
@@ -480,17 +507,14 @@ namespace naruto
 		{
 			name = new ASTIden();
 			start = name->parse(stream, start);
-			start++;
+			if(stream[start].isWa()) start++;
+			else return -1;
 			int end = ASTExpr::find_end_expression(stream, start);
 			if(stream[end].isDesu())
 			{
 				val = new ASTExpr();
 				start = val->parse(stream, start);
 				start++;
-				while(stream[start].isNewline())
-				{
-					start++;
-				}
 				if(stream[start].isDelim())
 				{
 					return start+1;
@@ -557,12 +581,24 @@ namespace naruto
 	{
 		if(stream[start].isDoki()) 
 		{
-			while(!stream[start].isWhileDelim())
+			start++;
+			expr = new ASTExpr();
+			start = expr->parse(stream, start);
+			if(stream[start].isDelim())
 			{
-				ASTState * statement = new ASTState();
-				start = statement->parse(stream, start);
-			}
-			return start+1;
+				start++;
+				while(start < stream.size() && !stream[start].isWhileDelim())
+				{
+					ASTState * statement = new ASTState();
+					start = statement->parse(stream, start);
+					state.push_back(statement);
+				}
+				if(start >= stream.size())
+				{
+					return -1;
+				}
+				return start+1;
+			}		
 		}
 		else
 		{
@@ -570,6 +606,35 @@ namespace naruto
 		}
 	}
 	
+	int ASTLambdaThread::parse(stream_t &stream, int start)
+	{
+		if(stream[start].isShadowCloneJutsu()) 
+		{
+			start++;
+			expr = new ASTExpr();
+			start = expr->parse(stream, start);
+			if(stream[start].isDelim())
+			{
+				start++;
+				while(start < stream.size() && !stream[start].isThreadDelim())
+				{
+					ASTState * statement = new ASTState();
+					start = statement->parse(stream, start);
+					state.push_back(statement);
+				}
+				if(start >= stream.size())
+				{
+					return -1;
+				}
+				return start+1;
+			}
+		}
+		else
+		{
+			return -1;
+		}
+	}
+
 	int ASTState::parse(stream_t &stream, int start)
 	{
 		if(stream[start].isNani()) 
@@ -587,6 +652,11 @@ namespace naruto
 			retexpr = new ASTRetExpr();
 			return retexpr->parse(stream, start);
 		}
+		else if(stream[start].isShadowCloneJutsu()) 
+		{
+			thread = new ASTLambdaThread();
+			return thread->parse(stream, start);
+		}
 		else if(start+1 < stream.size() && stream[start].isIden() && stream[start+1].isWa())
 		{
 			vdc = new ASTVarDecl();
@@ -595,7 +665,10 @@ namespace naruto
 		else
 		{
 			expr = new ASTExpr();
-			return expr->parse(stream, start) + 1;
+			int end = expr->parse(stream, start);
+			if(end == -1)
+				std::cout << "PARSING EXPR AS STATE RETURNED -1" << std::endl;
+			return end +1;
 		}
 	}
 
@@ -661,6 +734,11 @@ namespace naruto
 		std::cout << " " << op << " ";
 	}
 	
+	void ASTString::print()
+	{
+		std::cout << " " << str << " ";
+	}
+
 	void ASTIden::print()
 	{
 		std::cout << " " << iden << " ";
@@ -695,6 +773,7 @@ namespace naruto
 		if(flt) flt->print();
 		if(int_v) int_v->print();
 		if(call) call->print();
+		if(str) str->print();
 		std::cout << " )";
 	}
 
@@ -734,6 +813,7 @@ namespace naruto
 	{
 		std::cout << "WHILE ";
 		if(expr) expr->print(); else std::cout << "NULL";
+		std::cout << std::endl;
 		for(auto s : state)
 		{
 			s->print(); std::cout << std::endl;
@@ -741,6 +821,18 @@ namespace naruto
 		std::cout << "END WHILE ";
 	}
 	
+	void ASTLambdaThread::print()
+	{
+		std::cout << "THREAD ";
+		if(expr) expr->print(); else std::cout << "NULL";
+		std::cout << std::endl;
+		for(auto s : state)
+		{
+			s->print(); std::cout << std::endl;
+		}
+		std::cout << "END THREAD ";
+	}
+
 	void ASTState::print()
 	{
 		if(ws) ws->print();	
@@ -748,6 +840,7 @@ namespace naruto
 		if(expr) expr->print();	
 		if(retexpr) retexpr->print();	
 		if(vdc) vdc->print();	
+		if(thread) thread->print();
 	}
 
 	void ASTFnDecl::print()
