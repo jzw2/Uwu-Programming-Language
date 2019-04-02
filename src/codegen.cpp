@@ -17,8 +17,7 @@
 
 //all the code gen functions
 namespace naruto {
-		
-	
+
 llvm::Value * ASTIden::generate()
 {
   //i think thi will work
@@ -144,7 +143,7 @@ llvm::Value * ASTFnDecl::generate()
   llvm::BasicBlock *block = llvm::BasicBlock::Create(sContext, "plec that i need to endetr", func);
   //insert
   sBuilder.SetInsertPoint(block);
-  //setup the names ofy the function
+  //SETUP the names ofy the function
   for (auto &arg : func->args()) {
     // Create an alloca for this variable.
     llvm::AllocaInst *alloc = CreateEntryBlockAlloca(func, arg.getName());
@@ -164,4 +163,21 @@ llvm::Value * ASTFnDecl::generate()
   llvm::Value* ASTRoot::generate() {
     return nullptr;
   }
+	llvm::Value * ASTString::generate()
+	{
+		return llvm::ConstantDataArray::getString(sContext, llvm::StringRef(str));
+	}
+
+  llvm::Value * ASTLambdaThread::generate() {
+
+		return nullptr;
+	}
+
+  llvm::Value * ASTBinOp::generate()
+  {
+      return nullptr;
+
+	}
+
+
 }
