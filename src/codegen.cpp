@@ -121,6 +121,8 @@ llvm::Value * ASTState::generate()
 
   if (retexpr) {
     return retexpr->generate();
+  } else if (vdc){
+    return vdc->generate();
   }
   return nullptr;
 }
