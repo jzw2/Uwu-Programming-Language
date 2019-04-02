@@ -72,6 +72,8 @@ llvm::Value * ASTExpr::generate()
     } else if (op->getOp() == "/") {
       return sBuilder.CreateSDiv(left, right, "diving");
     } else if (op->getOp() == "==") {
+      auto leftType = left->getType();
+      auto rightType = right->getType();
       return  sBuilder.CreateICmpEQ(left, right, "camping");
     }else {
       return nullptr; //uh oh
@@ -120,6 +122,38 @@ llvm::Value * ASTRetExpr::generate()
 
 llvm::Value * ASTSelState::generate()
 {
+  auto condition = expr->generate();
+  llvm::Function* func = sBuilder.GetInsertBlock()->getParent();
+
+  llvm::BasicBlock* then_block = llvm::BasicBlock::Create(sContext, "then", func);
+  llvm::BasicBlock* else_block = llvm::BasicBlock::Create(sContext, "else");
+  llvm::BasicBlock* merge_block = llvm::BasicBlock::Create(sContext, "merge");
+
+  sBuilder.CreateCondBr(condition, then_block, else_block);
+  sBuilder.SetInsertPoint(then_block);
+
+  for (auto& then_state : if_body) {
+    then_state->generate();
+  }
+  sBuilder.CreateBr(merge_block);
+  then_block = sBuilder.GetInsertBlock();
+
+  func->getBasicBlockList().push_back(else_block);
+  sBuilder.SetInsertPoint(else_block); 
+  if (elif) {
+    elif->generate();
+  } else {
+    for (auto& else_statement : else_body) {
+      else_statement->generate();
+    }
+  }
+  sBuilder.CreateBr(merge_block);
+  else_block = sBuilder.GetInsertBlock();
+
+
+  func->getBasicBlockList().push_back(merge_block);
+  sBuilder.SetInsertPoint(merge_block);
+
   return nullptr;
 }
 
@@ -150,7 +184,7 @@ llvm::Value * ASTState::generate()
 
 static llvm::AllocaInst* CreateEntryBlockAlloca(llvm::Function* func, const std::string& var_name) {
   llvm::IRBuilder<> idk(&func->getEntryBlock(), func->getEntryBlock().begin());
-  return idk.CreateAlloca(llvm::Type::getDoubleTy(sContext), 0, var_name.c_str());
+  return idk.CreateAlloca(llvm::Type::getInt64Ty(sContext), 0, var_name.c_str());
 }
 
 llvm::Value * ASTFnDecl::generate()

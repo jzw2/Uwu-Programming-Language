@@ -54,13 +54,24 @@ void test2() {
   naruto::sModule->print(file_stream, nullptr);
   
 }
+void testFib() {
+  
+  naruto::sModule = llvm::make_unique<llvm::Module>("module", naruto::sContext);
+  std::vector<naruto::Lex> stream = naruto::naruto_lexize_file("fib.uwu");
+  naruto::ASTFnDecl f;
+  f.parse(stream, 0);
+  f.generate();
+
+  llvm::raw_os_ostream file_stream(std::cout);
+  naruto::sModule->print(file_stream, nullptr);
+}
 
 
 int main(void)
 {
   //naruto::sModule = llvm::make_unique<llvm::Module>("module", naruto::sContext);
   //test1();
-  test2();
+  testFib();
 	// std::string input = "../code_samples/factorial.uwu";
 	// //std::string input = "test.uwu";
 	// std::string expr = "temp wa temp*((n/10)*namae + 1) desu~";
