@@ -1,13 +1,13 @@
-factorial: n no jutsu~
-	result wa 1.0 desu~
+factorial-kun: n-san no jutsu~
+	result-kun wa 1.0 desu~
 	doki n > (n/10)*10~
 		result wa result*n desu~
 		n wa n-1 desu~ 
 	~~
 	result wa result*n desu~
 	shadow clone jutsu 10~ (OwO) start 9 threads (T_T)
-		i wa 0 desu~
-		temp wa 1.0 desu~
+		i-san wa 0 desu~
+		temp-kun wa 1.0 desu~
 		doki (n/10)*namae + i < ((n/10)*(namae+1))~
 			temp wa temp*((n/10)*namae + 1) desu~
 			i wa i+1 desu~

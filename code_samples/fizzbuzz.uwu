@@ -1,6 +1,6 @@
 
 fizzbuzz: no jutsu~
-	i wa 0 desu~
+	i-san wa 0 desu~
 	doki i < 100~
 		nani i % 3 desu ga 0 to i % 5 desu ga 0~
 			puts: "Fizzbuzz" no jutsu~
