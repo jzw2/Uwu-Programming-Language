@@ -682,7 +682,9 @@ namespace naruto
 			thread = new ASTLambdaThread();
 			return thread->parse(stream, start);
 		}
-		else if(start+1 < stream.size() && stream[start].isIden() && stream[start+1].isWa())
+		else if(stream[start].isIden() && 
+		(	(start+1 < stream.size() && stream[start+1].isWa()) 
+		|| 	(start+2 < stream.size() && stream[start+2].isWa())))
 		{
 			vdc = new ASTVarDecl();
 			return vdc->parse(stream, start);
