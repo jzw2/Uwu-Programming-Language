@@ -61,13 +61,6 @@ void testFib() {
   naruto::sModule = llvm::make_unique<llvm::Module>("module", naruto::sContext);
   std::vector<naruto::Lex> stream = naruto::naruto_lexize_file("../code_samples/fib.uwu");
   naruto::ASTRoot f;
-<<<<<<< HEAD
-=======
-	for(auto item : stream)
-    {
-      printLex(item);
-    }
->>>>>>> 30533f3a08730b063a6c35c71e1ecf54faa55246
   f.parse(stream, 0);
   f.print();
   f.generate();
