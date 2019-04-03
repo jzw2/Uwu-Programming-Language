@@ -312,7 +312,7 @@ namespace naruto
 		{
 			if(stream[fn_end].isVal() |
 			stream[fn_end].isNoJutsu() |
-			stream[start].isDesu() |
+			stream[fn_end].isDesu() |
 			stream[fn_end].isParenOpen() |
 			ASTFnCall::is_fn_call(stream, fn_end) |
 			stream[fn_end].isIden() |
