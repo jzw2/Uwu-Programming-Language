@@ -1,7 +1,7 @@
 fibonacci-san: nth-san no jutsu~
-	nani start desu ga 0~
+	nani nth desu ga 0~
 		sayonara 0 chan~
-	baka nani start desu ga 1~
+	baka nani nth desu ga 1~
 		sayonara 1 chan~
 	~?
 	sayonara fibonacci: nth-1 no jutsu + fibonacci: nth-2 no jutsu chan~
