@@ -15,6 +15,7 @@
 #include "llvm/ADT/APInt.h"
 #include "llvm/IR/Instructions.h"
 
+#include <iostream>
 //all the code gen functions
 namespace naruto {
 
@@ -22,6 +23,10 @@ llvm::Value * ASTIden::generate()
 {
   //i think thi will work
   llvm::Value *v = sLocals[iden];
+
+  if (v == nullptr) {
+    std::cerr << "its not like a wanted to be bakanat neun instationtated" << iden << std::endl;
+  }
   
   return sBuilder.CreateLoad(v, iden.c_str());
 }
@@ -47,7 +52,14 @@ llvm::Value * ASTFnCall::generate()
       putsArgs.push_back(sBuilder.getInt8Ty()->getPointerTo());
       llvm::FunctionType *putsType = llvm::FunctionType::get(sBuilder.getInt32Ty(), putsArgs, false);
       func = llvm::Function::Create(putsType, llvm::Function::ExternalLinkage, "puts", sModule.get());
-    }
+    } else if (iden->getIden() == "printf") {
+      //pro hack
+      
+      std::vector<llvm::Type *> putsArgs;
+      putsArgs.push_back(sBuilder.getInt8Ty()->getPointerTo());
+      llvm::FunctionType *putsType = llvm::FunctionType::get(sBuilder.getInt32Ty(), putsArgs, true);
+      func = llvm::Function::Create(putsType, llvm::Function::ExternalLinkage, "printf", sModule.get());
+    } 
   }
   std::vector<llvm::Value*> args;
   for (auto param : params) {
@@ -58,7 +70,6 @@ llvm::Value * ASTFnCall::generate()
 
 llvm::Value * ASTExpr::generate()
 {
-
   //ok this one is going to be hard
   if (op) {
     auto left = lhs->generate();
@@ -106,6 +117,9 @@ llvm::Value * ASTRetExpr::generate()
 {
   llvm::AllocaInst *alloc;
 
+  if (val == nullptr) {
+    std::cerr << " val was null, in " << name << std::endl;
+  }
   // Store the initial value into the alloca.
   if (sLocals.count(name->getIden())) {
     
@@ -220,11 +234,15 @@ llvm::Value * ASTFnDecl::generate()
   return func;
 }
   llvm::Value* ASTRoot::generate() {
+    for (auto& func : funcs) {
+      func->generate();
+    }
     return nullptr;
   }
 	llvm::Value * ASTString::generate()
 	{
-		return llvm::ConstantDataArray::getString(sContext, llvm::StringRef(str));
+    return sBuilder.CreateGlobalStringPtr(str);
+		//return llvm::ConstantDataArray::getString(sContext, llvm::StringRef(str));
 	}
 
   llvm::Value * ASTLambdaThread::generate() {

@@ -79,7 +79,9 @@ namespace naruto
 		while(std::regex_search(input, m, e)) 
 		{
 			std::string prefix = m.prefix().str();
-			std::string found = m.str();
+      std::regex r("\\\\n");
+			std::string found = std::regex_replace(m.str(), r, "\n");
+			// std::string found = m.str();
 			std::string suffix = m.suffix().str();
 			input = suffix;
 			lex_list(prefix, split, regex_words, word+1);
@@ -94,16 +96,16 @@ namespace naruto
 		"\\bno jutsu\\b", "\\bshadow clone jutsu\\b", "\\bdesu ga\\b", 
 		" ", "\\t", ":", "~~", "~\\?", "~!", "!!", "~",
 		"\\bdoki\\b", "\\bnani\\b", "\\bbaka\\b", "\\bnamae\\b", "\\bdesu\\b", "\\bwa\\b", 
-		"\\bsayonara\\b", "\\bchan\\b", /*"\\bsenpai\\b",*/ "\\b-san\\b", "\\b-kun\\b", "\\b-sama\\b",
+		"\\bsayonara\\b", "\\bchan\\b", "\\b-san\\b", "\\b-sama\\b", "\\b-kun\\b", "\\bsenpai\\b",
 		"\\(", "\\)", "\\+", "-", "\\*", "/", "%", "<<", ">>", ">=", "<=", "\\|\\|", ">", "<"};
 		std::vector<std::string> items(0);
 		lex_list(input, items, regex_words, 0);
 		for(int i = 0; i < items.size(); i++) {
 			auto item = items[i];
-			/*if(item == "\n")
-				std::cout << "'\\n'" << std::endl;
-			else
-				std::cout << (int)(item.c_str()[0]) << ": '" << item << "'" << std::endl;*/
+			// if(item == "\n")
+			// 	std::cout << "'\\n'" << std::endl;
+			// else
+			// 	std::cout << (int)(item.c_str()[0]) << ": '" << item << "'" << std::endl;
 			if(item == "\n") lexes.push_back(Lex(TokenCodes::new_line));
 			else if(item == ":") lexes.push_back(Lex(TokenCodes::colon));
 			else if(item == "~") lexes.push_back(Lex(TokenCodes::delim));
@@ -125,7 +127,7 @@ namespace naruto
 			else if(item == "-san") lexes.push_back(Lex(TokenCodes::san));
 			else if(item == "-kun") lexes.push_back(Lex(TokenCodes::kun));
 			else if(item == "-sama") lexes.push_back(Lex(TokenCodes::sama));
-			//else if(item == "senpai") lexes.push_back(Lex(TokenCodes::senpai));
+			else if(item == "senpai") lexes.push_back(Lex(TokenCodes::identifier, std::string("main")));
 			else if(item == "sayonara") lexes.push_back(Lex(TokenCodes::sayonara));
 			else if(item == "desu ga") 
 				lexes.push_back(Lex(TokenCodes::bin_op, "=="));

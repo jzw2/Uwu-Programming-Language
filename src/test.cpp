@@ -35,8 +35,10 @@ void test1() {
 
   naruto::sModule = llvm::make_unique<llvm::Module>("module", naruto::sContext);
   std::vector<naruto::Lex> stream = naruto::naruto_lexize_file("test.uwu");
+ 
   naruto::ASTFnDecl f;
   f.parse(stream, 0);
+  f.print();
   f.generate();
 
   llvm::raw_os_ostream file_stream(std::cout);
@@ -57,9 +59,14 @@ void test2() {
 void testFib() {
   
   naruto::sModule = llvm::make_unique<llvm::Module>("module", naruto::sContext);
-  std::vector<naruto::Lex> stream = naruto::naruto_lexize_file("fib.uwu");
-  naruto::ASTFnDecl f;
+  std::vector<naruto::Lex> stream = naruto::naruto_lexize_file("../code_samples/fib.uwu");
+  naruto::ASTRoot f;
+	for(auto item : stream)
+    {
+      printLex(item);
+    }
   f.parse(stream, 0);
+  f.print();
   f.generate();
 
   llvm::raw_os_ostream file_stream(std::cout);
