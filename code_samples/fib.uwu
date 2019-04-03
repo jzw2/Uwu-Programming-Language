@@ -4,7 +4,10 @@ fibonacci-san: nth-san no jutsu~
 	baka nani nth desu ga 1~
 		sayonara 1 chan~
 	~?
-	sayonara fibonacci: nth-1 no jutsu + fibonacci: nth-2 no jutsu chan~
+	temp-san wa 12 desu~
+  temp-san wa fibonacci: nth no jutsu desu~
+	printf: "%d\n" temp no jutsu~
+  sayonara temp chan ~
 !!
 
 senpai: no jutsu~
