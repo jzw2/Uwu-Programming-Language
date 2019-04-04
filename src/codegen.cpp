@@ -160,7 +160,10 @@ namespace naruto {
 		} 
 		else 
 		{
-			alloc = sBuilder.CreateAlloca(llvm::Type::getInt64Ty(sContext), val->generate());
+      auto generated_val = val->generate();
+			alloc = sBuilder.CreateAlloca(llvm::Type::getInt64Ty(sContext));
+      //llvm::ConstantInt::get(sContext, llvm::APInt(64, (uint64_t) val));
+			sBuilder.CreateStore(generated_val, alloc);
 			sLocals[name->getIden()] = alloc;
 		}
 	
@@ -184,10 +187,12 @@ namespace naruto {
 		{
 			then_state->generate();
 		}
-
-		sBuilder.CreateBr(merge_block);
+    auto last_instr = sBuilder.GetInsertBlock()->getTerminator();
+    if (last_instr == nullptr || std::string("ret") != last_instr->getOpcodeName())
+    {
+      sBuilder.CreateBr(merge_block);
+    }
 		then_block = sBuilder.GetInsertBlock();
-	
 		func->getBasicBlockList().push_back(else_block);
 		sBuilder.SetInsertPoint(else_block); 
 		if (elif) 
@@ -201,7 +206,11 @@ namespace naruto {
 				else_statement->generate();
 			}
 		}
-		sBuilder.CreateBr(merge_block);
+    auto last_instr2 = sBuilder.GetInsertBlock()->getTerminator();
+    if (last_instr2 == nullptr || std::string("ret") != last_instr2->getOpcodeName())
+      {
+        sBuilder.CreateBr(merge_block);
+      }
 		else_block = sBuilder.GetInsertBlock();
 	
 	

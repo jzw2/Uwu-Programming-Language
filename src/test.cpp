@@ -62,7 +62,7 @@ void testFib() {
   std::vector<naruto::Lex> stream = naruto::naruto_lexize_file("../code_samples/fib.uwu");
   naruto::ASTRoot f;
   f.parse(stream, 0);
-  f.print();
+  // f.print();
   f.generate();
 
   llvm::raw_os_ostream file_stream(std::cout);
