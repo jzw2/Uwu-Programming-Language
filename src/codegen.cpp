@@ -103,8 +103,21 @@ namespace naruto {
 				auto rightType = right->getType();
 				return	sBuilder.CreateICmpEQ(left, right, "camping");
 			}
+      else if (op->getOp() == ">")
+      {
+				auto leftType = left->getType();
+				auto rightType = right->getType();
+				return	sBuilder.CreateICmpSGT(left, right, "comparing greater than");
+      }
+      else if (op->getOp() == "<")
+        {
+          auto leftType = left->getType();
+          auto rightType = right->getType();
+          return	sBuilder.CreateICmpSLT(left, right, "comparing less than than");
+        }
 			else 
 			{
+        std::cerr << "unable to regecognize operator " << op->getOp() << std::endl;
 				return nullptr; //uh oh
 			}
 		} 
@@ -222,6 +235,27 @@ namespace naruto {
 	
 	llvm::Value * ASTWhileState::generate()
 	{
+		llvm::Function* func = sBuilder.GetInsertBlock()->getParent();
+	
+		llvm::BasicBlock* check_block = llvm::BasicBlock::Create(sContext, "while check", func);
+		llvm::BasicBlock* body_block = llvm::BasicBlock::Create(sContext, "while body", func);
+		llvm::BasicBlock* merge_block = llvm::BasicBlock::Create(sContext, "merge", func);
+
+    sBuilder.CreateBr(check_block);
+
+		sBuilder.SetInsertPoint(check_block);
+		auto condition = expr->generate();
+		sBuilder.CreateCondBr(condition, body_block, merge_block);
+
+
+		sBuilder.SetInsertPoint(body_block);
+    for (auto& statement :  state) {
+      statement->generate();
+    }
+    sBuilder.CreateBr(check_block);
+
+    
+		sBuilder.SetInsertPoint(merge_block);
 		return nullptr;
 	}
 		
