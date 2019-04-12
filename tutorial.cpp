@@ -1,3 +1,14 @@
+#include "llvm/ADT/APFloat.h"
+#include "llvm/ADT/STLExtras.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Constants.h"
+#include "llvm/IR/DerivedTypes.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Type.h"
+#include "llvm/IR/Verifier.h"
 #include "llvm/ADT/STLExtras.h"
 #include <algorithm>
 #include <cctype>
@@ -25,6 +36,7 @@ enum Token {
   tok_identifier = -4,
   tok_number = -5
 };
+using namespace llvm;
 
 static std::string IdentifierStr; // Filled in if tok_identifier
 static double NumVal;             // Filled in if tok_number
@@ -39,14 +51,17 @@ static int gettok() {
 
   if (isalpha(LastChar)) { // identifier: [a-zA-Z][a-zA-Z0-9]*
     IdentifierStr = LastChar;
-    while (isalnum((LastChar = getchar())))
+    
+	while (isalnum((LastChar = getchar())))
       IdentifierStr += LastChar;
 
     if (IdentifierStr == "def")
       return tok_def;
-    if (IdentifierStr == "extern")
+    
+	if (IdentifierStr == "extern")
       return tok_extern;
-    return tok_identifier;
+    
+	return tok_identifier;
   }
 
   if (isdigit(LastChar) || LastChar == '.') { // Number: [0-9.]+
@@ -90,6 +105,7 @@ namespace {
 class ExprAST {
 public:
   virtual ~ExprAST() = default;
+  virtual Value *codegen() = 0; 
   virtual void print_info() {}
 };
 
@@ -102,6 +118,8 @@ public:
   virtual void print_info() override {
     printf("%f", Val);
   }
+  virtual Value* codegen() override;
+  
 };
 
 /// VariableExprAST - Expression class for referencing a variable, like "a".
@@ -113,6 +131,7 @@ public:
   virtual void print_info() override {
     printf("%s", Name.c_str());
   }
+  virtual Value* codegen() override;
 };
 
 /// BinaryExprAST - Expression class for a binary operator.
@@ -131,8 +150,13 @@ public:
     RHS->print_info();
     printf(")");
   }
+  virtual Value* codegen() override;
 };
 
+  std::unique_ptr<ExprAST> LogError(const char *Str) {
+    fprintf(stderr, "Error: %s\n", Str);
+    return nullptr;
+  }
 /// CallExprAST - Expression class for function calls.
 class CallExprAST : public ExprAST {
   std::string Callee;
@@ -145,6 +169,7 @@ public:
   virtual void print_info() override {
     printf("%s (some arguments)", Callee.c_str());
   }
+  virtual Value* codegen() override;
 };
 
 /// PrototypeAST - This class represents the "prototype" for a function,
@@ -211,10 +236,15 @@ static int GetTokPrecedence() {
     return -1;
   return TokPrec;
 }
+static LLVMContext TheContext;
+static IRBuilder<> Builder(TheContext);
+static std::unique_ptr<Module> TheModule;
+static std::map<std::string, Value *> NamedValues;
+
 
 /// LogError* - These are little helper functions for error handling.
-std::unique_ptr<ExprAST> LogError(const char *Str) {
-  fprintf(stderr, "Error: %s\n", Str);
+Value *LogErrorV(const char *Str) {
+  LogError(Str);
   return nullptr;
 }
 std::unique_ptr<PrototypeAST> LogErrorP(const char *Str) {
@@ -222,6 +252,28 @@ std::unique_ptr<PrototypeAST> LogErrorP(const char *Str) {
   return nullptr;
 }
 
+Value *BinaryExprAST::codegen() {
+  Value *L = LHS->codegen();
+  Value *R = RHS->codegen();
+  if (!L || !R)
+    return nullptr;
+
+  switch (Op) {
+  case '+':
+    return Builder.CreateFAdd(L, R, "addtmp");
+  case '-':
+    return Builder.CreateFSub(L, R, "subtmp");
+  case '*':
+    return Builder.CreateFMul(L, R, "multmp");
+  case '<':
+    L = Builder.CreateFCmpULT(L, R, "cmptmp");
+    // Convert bool 0/1 to double 0.0 or 1.0
+    return Builder.CreateUIToFP(L, Type::getDoubleTy(TheContext),
+                                "booltmp");
+  default:
+    return LogErrorV("invalid binary operator");
+  }
+}
 static std::unique_ptr<ExprAST> ParseExpression();
 
 /// numberexpr ::= number
@@ -231,6 +283,14 @@ static std::unique_ptr<ExprAST> ParseNumberExpr() {
   return std::move(Result);
 }
 
+
+Value *VariableExprAST::codegen() {
+  // Look this variable up in the function.
+  Value *V = NamedValues[Name];
+  if (!V)
+    LogErrorV("Unknown variable name");
+  return V;
+}
 /// parenexpr ::= '(' expression ')'
 static std::unique_ptr<ExprAST> ParseParenExpr() {
   getNextToken(); // eat (.
@@ -432,6 +492,30 @@ static void HandleTopLevelExpression() {
   }
 }
 
+Value *NumberExprAST::codegen() {
+  return ConstantFP::get(TheContext, APFloat(Val));
+}
+
+
+Value *CallExprAST::codegen() {
+  // Look up the name in the global module table.
+  Function *CalleeF = TheModule->getFunction(Callee);
+  if (!CalleeF)
+    return LogErrorV("Unknown function referenced");
+
+  // If argument mismatch error.
+  if (CalleeF->arg_size() != Args.size())
+    return LogErrorV("Incorrect # arguments passed");
+
+  std::vector<Value *> ArgsV;
+  for (unsigned i = 0, e = Args.size(); i != e; ++i) {
+    ArgsV.push_back(Args[i]->codegen());
+    if (!ArgsV.back())
+      return nullptr;
+  }
+
+  return Builder.CreateCall(CalleeF, ArgsV, "calltmp");
+}
 /// top ::= definition | external | expression | ';'
 static void MainLoop() {
   while (true) {
@@ -459,7 +543,7 @@ static void MainLoop() {
 // Main driver code.
 //===----------------------------------------------------------------------===//
 
-int main() {
+ins main() {
   // Install standard binary operators.
   // 1 is lowest precedence.
   BinopPrecedence['<'] = 10;

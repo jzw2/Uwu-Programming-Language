@@ -1,0 +1,15 @@
+fibonacci-san: nth-san no jutsu~
+	nani nth desu ga 0~
+		sayonara 0 chan~
+	baka nani nth desu ga 1~
+		sayonara 1 chan~
+	~?
+  temp-san wa fibonacci: nth - 1 no jutsu + fibonacci: nth - 2 no jutsu desu~
+	printf: "%d\n" temp no jutsu~
+  sayonara temp chan ~
+!!
+
+senpai-san: no jutsu~
+	printf: "%d\n" fibonacci: 20 no jutsu no jutsu~
+  sayonara 0 chan ~
+~!

@@ -1,0 +1,20 @@
+
+fizzbuzz: no jutsu~
+	i-san wa 0 desu~
+	doki i < 100~
+		nani i % 3 desu ga 0 to i % 5 desu ga 0~
+			puts: "Fizzbuzz" no jutsu~
+		baka nani i % 3 desu ga 0~
+			puts: "Fizz" no jutsu~
+		baka nani i % 5 desu ga 0~
+			puts: "Buzz" no jutsu~
+		baka~
+			puts: i no jutsu~
+		~?
+		i wa i + 1 desu~
+	~~
+!!
+
+senpai: no jutsu~
+	   fizzbuzz: no jutsu~
+~!
