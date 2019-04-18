@@ -24,7 +24,14 @@ int main(int argc, char **argv) {
   f.generate();
 
   std::string filename = argv[1];
-  auto base = filename.substr(0, filename.length() - 3);
+  size_t begin_index;
+  for (begin_index = filename.length() - 1; begin_index ; begin_index--) {
+    if (filename[begin_index] == '/') {
+      begin_index++;
+      break;
+    }
+  }
+  auto base = filename.substr(begin_index, filename.length() - 3);
 
 
   std::string llvm_file = base + "ll";
