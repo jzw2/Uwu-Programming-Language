@@ -17,18 +17,25 @@
 
 #include <iostream>
 //all the code gen functions
+
+std::map<std::string, llvm::Function*> funcScope;
+
 namespace naruto {
 
 	llvm::Value * ASTIden::generate()
 	{
 		//i think thi will work
-		llvm::Value *v = sLocals[iden];
+   
+    std::string func_name = sBuilder.GetInsertBlock()->getParent()->getName();
+		llvm::Value *v = sLocals[func_name + iden];
+
 	
+		
 		if (v == nullptr) 
 		{
 			std::cerr << "It's not like a wanted to be instatiated or anything, baka!" << iden << std::endl;
 		}
-		
+
 		return sBuilder.CreateLoad(v, iden.c_str());
 	}
 		
@@ -166,9 +173,11 @@ namespace naruto {
 			std::cerr << name << "-dono was null! Kowai!" << std::endl;
 		}
 		// Store the initial value into the alloca.
-		if (sLocals.count(name->getIden())) 
+    std::string func_name = sBuilder.GetInsertBlock()->getParent()->getName();
+    std::string full_name = func_name + name->getIden();
+		if (sLocals.count(full_name)) 
 		{	
-			alloc = sLocals[name->getIden()];
+			alloc = sLocals[full_name];
 			return sBuilder.CreateStore(val->generate(), alloc);
 		} 
 		else 
@@ -177,7 +186,7 @@ namespace naruto {
 			alloc = sBuilder.CreateAlloca(llvm::Type::getInt64Ty(sContext));
       //llvm::ConstantInt::get(sContext, llvm::APInt(64, (uint64_t) val));
 			sBuilder.CreateStore(generated_val, alloc);
-			sLocals[name->getIden()] = alloc;
+			sLocals[full_name] = alloc;
 		}
 	
 		// Add arguments to variable symbol table.
@@ -320,7 +329,9 @@ namespace naruto {
 	
 			// Add arguments to variable symbol table.
 			arg.setName(params[index]->getIden());
-			sLocals[arg.getName()] = alloc;
+      std::string func_name = func->getName();
+      std::string full_name = func_name + std::string(arg.getName());
+			sLocals[full_name] = alloc;
 		}
 		for (auto state : body) 
 		{
