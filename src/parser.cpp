@@ -220,6 +220,7 @@ namespace naruto
 		{
 			iden = new ASTIden();
 			start = iden->parse(stream, start);
+			iden->setParent(this);
 			int next_pos = start+1;
 			while(true)
 			{
@@ -235,6 +236,7 @@ namespace naruto
 				{
 					ASTExpr * expr = new ASTExpr();
 					next_pos = expr->parse(stream, next_pos);
+					expr->setParent(this);
 					params.push_back(expr);
 				}
 			}
@@ -379,6 +381,7 @@ namespace naruto
 		if(ASTFnCall::is_fn_call(stream, start))
 		{
 			call = new ASTFnCall();
+			call->setParent(this);
 			return call->parse(stream, start);
 		}
 		if(stream[start].isParenOpen())
@@ -390,21 +393,25 @@ namespace naruto
 		else if(stream[start].isIden())
 		{
 			iden = new ASTIden();
+			iden->setParent(this);
 			return iden->parse(stream, start);
 		}
 		if(stream[start].isIntVal())
 		{
 			int_v = new ASTInt();
+			int_v->setParent(this);
 			return int_v->parse(stream, start);
 		}
 		else if(stream[start].isFloatVal())
 		{
 			flt = new ASTFloat();
+			flt->setParent(this);
 			return flt->parse(stream, start);
 		}
 		else if(stream[start].isStrVal())
 		{
 			str = new ASTString();
+			str->setParent(this);
 			return str->parse(stream, start);
 		}
 		return -1;
@@ -455,16 +462,20 @@ namespace naruto
 			if(found)
 			{
 				lhs = new ASTExpr();
+				lhs->setParent(this);
 				lhs->parse_lvl(stream, start, next_pos, precedence, level+1);
 				op = new ASTBinOp();
+				op->setParent(this);
 				op->parse(stream, next_pos);
 				rhs = new ASTExpr();
+				rhs->setParent(this);
 				rhs->parse_lvl(stream, next_pos+1, end, precedence, level);
 				return end;
 			}
 			else if(one_after_start >= end || IS_EOF(stream, one_after_start))
 			{
 				lhs = new ASTExpr();
+				lhs->setParent(this);
 				lhs->parse_operand(stream, start);
 				return end;	
 			}
@@ -518,6 +529,7 @@ namespace naruto
 				}
 				
 				expr = new ASTExpr();
+				expr->setParent(this);
 				start = expr->parse(stream, start);
 				return start+2; //+2 for chan and ~
 			}
@@ -531,6 +543,7 @@ namespace naruto
 		if(stream[start].isIden())
 		{
 			name = new ASTIden();
+			name->setParent(this);
 			start = name->parse(stream, start);
 			if(stream[start].isWa()) start++;
 			else return -1;
@@ -538,6 +551,7 @@ namespace naruto
 			if(stream[end].isDesu())
 			{
 				val = new ASTExpr();
+				val->setParent(this);
 				start = val->parse(stream, start);
 				start++;
 				if(stream[start].isDelim())
@@ -555,6 +569,7 @@ namespace naruto
 		{
 			start++;
 			expr = new ASTExpr();
+			expr->setParent(this);
 			start = expr->parse(stream, start);
 			if(stream[start].isDelim())
 			{
@@ -562,6 +577,7 @@ namespace naruto
 				while(!stream[start].isBaka() && !stream[start].isIfDelim()) 
 				{
 					ASTState * statement = new ASTState();
+					statement->setParent(this);
 					start = statement->parse(stream, start);
 					if_body.push_back(statement);
 				}
@@ -571,6 +587,7 @@ namespace naruto
 					if(stream[start].isNani())
 					{
 						elif = new ASTSelState();
+						elif->setParent(this);
 						start = elif->parse(stream, start);
 						return start;
 					}
@@ -579,6 +596,7 @@ namespace naruto
 						while(!stream[start].isIfDelim()) 
 						{
 							ASTState * statement = new ASTState();
+							statement->setParent(this);
 							start = statement->parse(stream, start);
 							else_body.push_back(statement);
 						}
@@ -608,6 +626,7 @@ namespace naruto
 		{
 			start++;
 			expr = new ASTExpr();
+			expr->setParent(this);
 			start = expr->parse(stream, start);
 			if(stream[start].isDelim())
 			{
@@ -615,6 +634,7 @@ namespace naruto
 				while(start < stream.size() && !stream[start].isWhileDelim())
 				{
 					ASTState * statement = new ASTState();
+					statement->setParent(this);
 					start = statement->parse(stream, start);
 					state.push_back(statement);
 				}
@@ -637,6 +657,7 @@ namespace naruto
 		{
 			start++;
 			expr = new ASTExpr();
+			expr->setParent(this);
 			start = expr->parse(stream, start);
 			if(stream[start].isDelim())
 			{
@@ -644,6 +665,7 @@ namespace naruto
 				while(start < stream.size() && !stream[start].isThreadDelim())
 				{
 					ASTState * statement = new ASTState();
+					statement->setParent(this);
 					start = statement->parse(stream, start);
 					state.push_back(statement);
 				}
@@ -665,21 +687,25 @@ namespace naruto
 		if(stream[start].isNani()) 
 		{
 			ss = new ASTSelState();
+			ss->setParent(this);
 			return ss->parse(stream, start);
 		}
 		else if(stream[start].isDoki())
 		{
 			ws = new ASTWhileState();
+			ws->setParent(this);
 			return ws->parse(stream, start);
 		}
 		else if(stream[start].isSayonara()) 
 		{
 			retexpr = new ASTRetExpr();
+			retexpr->setParent(this);
 			return retexpr->parse(stream, start);
 		}
 		else if(stream[start].isShadowCloneJutsu()) 
 		{
 			thread = new ASTLambdaThread();
+			thread->setParent(this);
 			return thread->parse(stream, start);
 		}
 		else if(stream[start].isIden() && 
@@ -687,11 +713,13 @@ namespace naruto
 		|| 	(start+2 < stream.size() && stream[start+2].isWa())))
 		{
 			vdc = new ASTVarDecl();
+			vdc->setParent(this);
 			return vdc->parse(stream, start);
 		}
 		else
 		{
 			expr = new ASTExpr();
+			expr->setParent(this);
 			int end = expr->parse(stream, start);
 			if(end == -1)
 				std::cout << "PARSING EXPR AS STATE RETURNED -1" << std::endl;
@@ -704,12 +732,14 @@ namespace naruto
 		if(stream[start].isIden())
 		{
 			name = new ASTIden();
+			name->setParent(this);
 			start = name->parse(stream, start);
 			if(stream[start].isColon()) start++;
 			else return -1; //fail for now, this is how grammar has it
 			while(!stream[start].isNoJutsu()) 
 			{
 				ASTIden * param = new ASTIden();
+				param->setParent(this);
 				start = param->parse(stream, start);
 				params.push_back(param);
 			}
@@ -720,6 +750,7 @@ namespace naruto
 			while(start < (int)stream.size() && !stream[start].isFnDelim())
 			{
 				ASTState * statement = new ASTState();
+				statement->setParent(this);
 				start = statement->parse(stream, start);
 				body.push_back(statement);
 			}
@@ -738,12 +769,14 @@ namespace naruto
 			if(start+1 < stream.size() && stream[start].isIden() && stream[start+1].isWa())
 			{
 				ASTVarDecl * vdc = new ASTVarDecl();
+				vdc->setParent(this);
 				start = vdc->parse(stream, start);
 				globals.push_back(vdc);
 			}
 			else if(stream[start].isIden())
 			{
 				ASTFnDecl * func = new ASTFnDecl();
+				func->setParent(this);
 				start = func->parse(stream, start);
 				funcs.push_back(func);
 			}
