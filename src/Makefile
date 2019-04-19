@@ -4,13 +4,13 @@ LD = g++
 CXXFLAGS = -std=c++17 -c -g
 LDFLAGS = -std=c++17 -g -lpthread
 
-test : test_pre
-
 uwu : uwu.o lexer.o parser.o lexerUtils.o codegen.o
 	$(LD) $(LDFLAGS) uwu.o lexer.o parser.o lexerUtils.o codegen.o `llvm-config --cxxflags --ldflags --system-libs --libs core` -o uwu
 
+test : test_pre
+
 test_pre : test.o lexer.o parser.o lexerUtils.o codegen.o
-	$(LD) $(LDFLAGS) test.o lexer.o parser.o lexerUtils.o codegen.o `llvm-config --cxxflags --ldflags --system-libs --libs core` -o test
+	$(LD) $(LDFLAGS) test.o lexer.o parser.o lexerUtils.o codegen.o parser_dtors.o `llvm-config --cxxflags --ldflags --system-libs --libs core` -o test
 
 test.o : test.cpp
 	$(CXX) $(CXXFLAGS) test.cpp
@@ -27,7 +27,10 @@ lexer.o : lexer.h lexer.cpp
 parser.o : parser.cpp parser.h
 	$(CXX) $(CXXFLAGS) parser.cpp
 
-codegen.o : codegen.cpp
+parser_dtors.o : parser_dtors.cpp parser.h
+	$(CXX) $(CXXFLAGS) parser_dtors.cpp
+
+codegen.o : codegen.cpp parser.h
 	$(CXX) $(CXXFLAGS) codegen.cpp
 
 clean :
