@@ -22,6 +22,10 @@ namespace naruto
 
 	//std::vector<std::string> get_outofcontext_vars(); 
 
+	extern llvm::LLVMContext sContext;
+	extern llvm::IRBuilder<> sBuilder;
+	extern std::unique_ptr<llvm::Module> sModule;
+	extern std::map<std::string, llvm::AllocaInst*> sLocals;
 	class ASTNode
 	{	
 		ASTNode * parent;
@@ -134,7 +138,7 @@ namespace naruto
 			iden = rhs.iden ? new ASTIden(*(rhs.iden)) : iden; 
 			params = rhs.params; 
 			return *this; }
-		virtual ~ASTFnCall() override; //{ for(ASTExpr * p : params) delete p; delete iden; };
+		virtual ~ASTFnCall() override {} //{ for(ASTExpr * p : params) delete p; delete iden; };
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
 		virtual void print() override;
@@ -143,7 +147,7 @@ namespace naruto
 		static bool is_fn_call(stream_t &stream, int start);
 	};
 
-	class ASTExpr : ASTNode //ASTIden, ASTInt, ASTFloat, ASTFnCall???
+	class ASTExpr : public ASTNode //ASTIden, ASTInt, ASTFloat, ASTFnCall???
 	{
 		ASTExpr * lhs;
 		ASTBinOp * op;
@@ -220,7 +224,7 @@ namespace naruto
 		void setExpr(ASTExpr *e) {expr = e;}
 	};
 
-	class ASTVarDecl : ASTNode
+	class ASTVarDecl : public ASTNode
 	{
 		ASTIden * name;
 		ASTExpr * val;
@@ -240,7 +244,7 @@ namespace naruto
 
 	class ASTState;
 
-	class ASTSelState : ASTNode
+	class ASTSelState : public ASTNode
 	{
 		ASTExpr * expr;
 		std::vector<ASTState*> if_body;
@@ -261,13 +265,13 @@ namespace naruto
 			elif = rhs.elif ? new ASTSelState(*(rhs.elif)) : rhs.elif; 
 			return *this; }
 
-		virtual ~ASTSelState() override;
+		virtual ~ASTSelState() override {}
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
 		virtual void print() override;
 	};
 
-	class ASTWhileState : ASTNode
+	class ASTWhileState : public ASTNode
 	{
 		ASTExpr * expr;
 		std::vector<ASTState*> state;
@@ -280,13 +284,13 @@ namespace naruto
 			state(st) {};
 		ASTWhileState & operator=(const ASTWhileState & rhs) { ASTNode::operator=(rhs); expr = rhs.expr ? new ASTExpr(*(rhs.expr)) : rhs.expr; 
 			state = rhs.state; return *this; }
-		virtual ~ASTWhileState() override;
+		virtual ~ASTWhileState() override {}
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
 		virtual void print() override;
 	};
 	
-	class ASTLambdaThread : ASTNode
+	class ASTLambdaThread : public ASTNode
 	{
 		ASTExpr * expr;
 		std::vector<ASTState*> state;
@@ -299,13 +303,13 @@ namespace naruto
 			state(st) {};
 		ASTLambdaThread & operator=(const ASTLambdaThread & rhs) { ASTNode::operator=(rhs); expr = rhs.expr ? new ASTExpr(*(rhs.expr)) : rhs.expr; 
 			state = rhs.state; return *this; }
-		virtual ~ASTLambdaThread() override;
+		virtual ~ASTLambdaThread() override {}
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
 		virtual void print() override;
 	};
 
-	class ASTState : ASTNode
+	class ASTState : public ASTNode
 	{
 		ASTWhileState * ws;
 		ASTSelState * ss;
@@ -342,7 +346,7 @@ namespace naruto
 		void setRetExpr(ASTRetExpr *r) {retexpr = r;}
 	};
 
-	class ASTFnDecl : ASTNode
+	class ASTFnDecl : public ASTNode
 	{
 		ASTIden * name;
 		std::vector<ASTIden*> params;
@@ -369,7 +373,7 @@ namespace naruto
 	};
 	
 
-	class ASTRoot : ASTNode
+	class ASTRoot : public ASTNode
 	{
 		std::vector<ASTVarDecl*> globals;
 		std::vector<ASTFnDecl*> funcs;
