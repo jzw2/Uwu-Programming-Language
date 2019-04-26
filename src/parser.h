@@ -67,6 +67,10 @@ namespace naruto
 	public:
 		ASTIden() : iden(std::string()), type(std::string()) {}
 		ASTIden(const ASTIden & other) : ASTNode((ASTNode)other) { iden = other.iden; type = other.type; }
+    ASTIden(std::string s) {
+      iden = s;
+      type = "int"; //deafult i  is int
+    }
 		ASTIden & operator=(const ASTIden & rhs) { ASTNode::operator=(rhs); iden = rhs.iden; type = rhs.type; return *this; }
 		
 		virtual ~ASTIden() override = default;
@@ -89,6 +93,7 @@ namespace naruto
 		ASTInt(const ASTInt & rhs) : ASTNode((ASTNode)rhs) { val = rhs.val; }
 		ASTInt & operator=(const ASTInt & rhs) { ASTNode::operator=(rhs); val = rhs.val; return *this; }
 		
+  ASTInt(long v) : val(v) {}
 		virtual ~ASTInt() override = default;
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
@@ -138,7 +143,7 @@ namespace naruto
 			iden = rhs.iden ? new ASTIden(*(rhs.iden)) : iden; 
 			params = rhs.params; 
 			return *this; }
-		virtual ~ASTFnCall() override {} //{ for(ASTExpr * p : params) delete p; delete iden; };
+		virtual ~ASTFnCall() override; //{ for(ASTExpr * p : params) delete p; delete iden; };
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
 		virtual void print() override;
@@ -196,6 +201,16 @@ namespace naruto
 			str = other.str ? new ASTString(*(other.str)) : other.str; 
 			return *this; }
 
+  ASTExpr(long val) : lhs(nullptr), 
+			op(nullptr), 
+			rhs(nullptr), 
+			iden(nullptr), 
+			flt(nullptr), 
+			int_v(nullptr), 
+			str(nullptr), 
+			call(nullptr) {
+                     int_v = new ASTInt(val);
+      }
 		virtual ~ASTExpr() override {delete lhs; delete op; delete iden; delete flt; 
 			delete int_v; delete call; delete str; }
 		virtual int parse(stream_t &stream, int start) override;
@@ -236,6 +251,11 @@ namespace naruto
 		ASTVarDecl & operator=(const ASTVarDecl & rhs) { ASTNode::operator=(rhs); val = rhs.val ? new ASTExpr(*(rhs.val)) : rhs.val;
 			name = rhs.name ? new ASTIden(*(rhs.name)) : rhs.name; 
 			return *this; }
+    ASTVarDecl(std::string n, long v) {
+                                       name = new ASTIden(n);
+                                       val = new ASTExpr(v);
+
+    }
 		virtual ~ASTVarDecl() override { delete name; delete val; }
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
@@ -265,7 +285,7 @@ namespace naruto
 			elif = rhs.elif ? new ASTSelState(*(rhs.elif)) : rhs.elif; 
 			return *this; }
 
-		virtual ~ASTSelState() override {}
+		virtual ~ASTSelState() override;
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
 		virtual void print() override;
@@ -284,7 +304,7 @@ namespace naruto
 			state(st) {};
 		ASTWhileState & operator=(const ASTWhileState & rhs) { ASTNode::operator=(rhs); expr = rhs.expr ? new ASTExpr(*(rhs.expr)) : rhs.expr; 
 			state = rhs.state; return *this; }
-		virtual ~ASTWhileState() override {}
+		virtual ~ASTWhileState() override;
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
 		virtual void print() override;
@@ -303,7 +323,7 @@ namespace naruto
 			state(st) {};
 		ASTLambdaThread & operator=(const ASTLambdaThread & rhs) { ASTNode::operator=(rhs); expr = rhs.expr ? new ASTExpr(*(rhs.expr)) : rhs.expr; 
 			state = rhs.state; return *this; }
-		virtual ~ASTLambdaThread() override {}
+		virtual ~ASTLambdaThread() override;
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
 		virtual void print() override;
@@ -356,9 +376,14 @@ namespace naruto
 			params(std::vector<ASTIden*>()),
 			body(std::vector<ASTState*>()) {}
 		ASTFnDecl(const ASTFnDecl & other) : ASTNode((ASTNode)other) { name = other.name ? new ASTIden(*(other.name)) : other.name;
+      ASTFnDecl(std::string func_name, std::vector<ASTState*> statements) {
+        name = new ASTIden();
+        name->setName(func_name);
+        body = statements;
+      }
 			params = other.params;
 			body = other.body; }
-		ASTFnDecl operator=(const ASTFnDecl & rhs) { ASTNode((ASTNode)rhs); name = rhs.name ? new ASTIden(*(rhs.name)) : rhs.name;
+		ASTFnDecl operator=(const ASTFnDecl & rhs) { ASTNode::operator=((ASTNode)rhs); name = rhs.name ? new ASTIden(*(rhs.name)) : rhs.name;
 			params = rhs.params;
 			body = rhs.body;
 			return *this; }
