@@ -18,10 +18,10 @@ int main(int argc, char **argv) {
   naruto::sModule = llvm::make_unique<llvm::Module>("module", naruto::sContext);
   std::vector<naruto::Lex> stream = naruto::naruto_lexize_file(argv[1]);
 
-  naruto::ASTRoot f;
-  f.parse(stream, 0);
+  auto f = llvm::make_unique<naruto::ASTRoot>();
+  f->parse(stream, 0);
   // f.print();
-  f.generate();
+  f->generate();
 
   std::string filename = argv[1];
   size_t begin_index;
