@@ -378,12 +378,13 @@ namespace naruto {
     std::string secret_func_name = "xx___secrete_FuncTion__";
 		std::vector<llvm::Type *> anon_func_types_vec;
     anon_func_types_vec.push_back(llvm::Type::getInt8Ty(sContext)->getPointerTo());
-		llvm::FunctionType *anon_func_type = llvm::FunctionType::get(llvm::Type::getInt32Ty(sContext), anon_func_types_vec, false);
+		llvm::FunctionType *anon_func_type = llvm::FunctionType::get(llvm::Type::getInt64Ty(sContext), anon_func_types_vec, false);
 		//created the function
 		llvm::Function* secret_func = llvm::Function::Create(anon_func_type, llvm::Function::ExternalLinkage, secret_func_name, sModule.get());
 
 		//creatirg fntuctiuon bady
 		llvm::BasicBlock *block = llvm::BasicBlock::Create(sContext, "entry point", secret_func);
+    sBuilder.SetInsertPoint(block);
     for (auto &s : this->state) {
       s->generate();
     }

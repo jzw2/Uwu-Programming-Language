@@ -509,25 +509,26 @@ namespace naruto
 		virtual llvm::Value * generate() override {
       
       llvm::Function* clone_func = sModule->getFunction("clone");
+      llvm::Function* secret_func = sModule->getFunction(function_name);
       if (clone_func == nullptr) {
         
         std::vector<llvm::Type *> anon_func_types_vec;
         anon_func_types_vec.push_back(llvm::Type::getInt8Ty(sContext)->getPointerTo());
-        llvm::FunctionType *anon_func_type = llvm::FunctionType::get(llvm::Type::getInt32Ty(sContext), anon_func_types_vec, false);
+        llvm::FunctionType *anon_func_type = llvm::FunctionType::get(llvm::Type::getInt64Ty(sContext), anon_func_types_vec, false);
 
 
         std::vector<llvm::Type *> clone_types_vec;
-        clone_types_vec.push_back(anon_func_type);
+        clone_types_vec.push_back(anon_func_type->getPointerTo());
         clone_types_vec.push_back(sBuilder.getInt8Ty()->getPointerTo());
         clone_types_vec.push_back(sBuilder.getInt32Ty());
         clone_types_vec.push_back(sBuilder.getInt8Ty()->getPointerTo());
 
         llvm::FunctionType *clone_type = llvm::FunctionType::get(sBuilder.getInt32Ty(), clone_types_vec, true);
-        auto clone_func = llvm::Function::Create(clone_type, llvm::Function::ExternalLinkage, "clone", sModule.get());
+        clone_func = llvm::Function::Create(clone_type, llvm::Function::ExternalLinkage, "clone", sModule.get());
       }
       std::vector<llvm::Value*> clone_arguments;
 
-      clone_arguments.push_back(clone_func);
+      clone_arguments.push_back(secret_func);
 
       std::vector<llvm::Value*> malloc_arguments;
       malloc_arguments.push_back(llvm::ConstantInt::get(sContext, llvm::APInt(64, (uint64_t) 1024 * 8)));
@@ -540,9 +541,9 @@ namespace naruto
         func = llvm::Function::Create(malloc_type, llvm::Function::ExternalLinkage, "malloc", sModule.get());
       }
 
-      clone_arguments.push_back(llvm::Constant::getNullValue(sBuilder.getInt8Ty()));
+      clone_arguments.push_back(llvm::Constant::getNullValue(sBuilder.getInt8Ty()->getPointerTo()));
       clone_arguments.push_back(llvm::ConstantInt::get(sContext, llvm::APInt(32, 0)));
-      clone_arguments.push_back(llvm::Constant::getNullValue(sBuilder.getInt8Ty()));
+      clone_arguments.push_back(llvm::Constant::getNullValue(sBuilder.getInt8Ty()->getPointerTo()));
 
       return sBuilder.CreateCall(clone_func, clone_arguments, "clalling clone");
     }
