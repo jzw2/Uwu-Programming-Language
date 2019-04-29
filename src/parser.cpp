@@ -1,7 +1,7 @@
 #include <iostream>
 #include <algorithm>
 #include <stack>
-#include <map>
+#include <unordered_map>
 #include <cstdlib>
 
 #include "parser.h"
@@ -24,12 +24,162 @@
 #define ASSERT_BOUNDS(stream, start) if(start >= (int)stream.size()) return stream.size(); else if(start == -1) return -1;
 #define RESET(obj) delete obj; obj = nullptr;
 namespace naruto
-{
-	
+{	
 	llvm::LLVMContext sContext;
 	llvm::IRBuilder<> sBuilder(sContext);
 	std::unique_ptr<llvm::Module> sModule;
 	std::map<std::string, llvm::AllocaInst*> sLocals;
+	
+	//this only works with objects with virtual funcs,
+	//sorry. also this is super hacky and totally dangerous, do not attempt
+	template <class T>
+	bool is_of_type(void * obj)
+	{
+		T temp;
+		long type_vtable = *reinterpret_cast<long*>(&temp);
+		long obj_vtable = *reinterpret_cast<long*>(obj);
+		return type_vtable == obj_vtable;
+	}
+	
+	std::vector<ASTVarDecl*> get_vardecls(ASTNode * node, ASTNode * toMatch)
+	{
+		if(is_of_type<ASTState>(node)) {
+			ASTNode * scope = ((ASTState*)node)->getState();
+			if(is_of_type<ASTSelState>(scope))
+			{
+				std::vector<ASTVarDecl*> vdecs;
+				bool correct_body = false;
+				for(auto s : ((ASTSelState*)scope)->getIfBody())
+				{
+					if(toMatch == s)
+						correct_body = true;
+					ASTNode * state = s->getState();
+					if(is_of_type<ASTVarDecl>(state)) 
+					{
+						vdecs.push_back((ASTVarDecl*)state);
+					}
+				}
+				if(correct_body)
+					return vdecs;
+				vdecs = std::vector<ASTVarDecl*>();
+				for(auto s : ((ASTSelState*)scope)->getElseBody())
+				{
+					if(toMatch == s)
+						correct_body = true;
+					ASTNode * state = s->getState();
+					if(is_of_type<ASTVarDecl>(state)) 
+					{
+						vdecs.push_back((ASTVarDecl*)state);
+					}
+				}
+				if(correct_body)
+					return vdecs;
+			}
+			else if(is_of_type<ASTWhileState>(scope))
+			{
+				std::vector<ASTVarDecl*> vdecs;
+				bool correct_body = false;
+				for(auto s : ((ASTWhileState*)scope)->getState())
+				{
+					if(toMatch == s)
+						correct_body = true;
+					ASTNode * state = s->getState();
+					if(is_of_type<ASTVarDecl>(state)) 
+					{
+						vdecs.push_back((ASTVarDecl*)state);
+					}
+				}
+				if(correct_body)
+					return vdecs;
+			}
+			else if(is_of_type<ASTLambdaThread>(scope))
+			{
+				std::vector<ASTVarDecl*> vdecs;
+				bool correct_body = false;
+				for(auto s : ((ASTLambdaThread*)scope)->getState())
+				{
+					if(toMatch == s)
+						correct_body = true;
+					ASTNode * state = s->getState();
+					if(is_of_type<ASTVarDecl>(state)) 
+					{
+						vdecs.push_back((ASTVarDecl*)state);
+					}
+				}
+				if(correct_body)
+					return vdecs;
+			}
+		}
+		else if(is_of_type<ASTFnDecl>(node))
+		{
+			std::vector<ASTVarDecl*> vdecs;
+			bool correct_body = false;
+			for(auto s : ((ASTFnDecl*)node)->getBody())
+			{
+				if(toMatch == s)
+					correct_body = true;
+				ASTNode * state = s->getState();
+				if(is_of_type<ASTVarDecl>(state)) 
+				{
+					vdecs.push_back((ASTVarDecl*)state);
+				}
+			}
+			if(correct_body)
+				return vdecs;
+		}
+		else if(is_of_type<ASTRoot>(node))
+		{
+			std::vector<ASTVarDecl*> vdecs;
+			bool correct_body = false;
+			for(auto s : ((ASTRoot*)node)->getGlobals())
+			{
+				vdecs.push_back(s);
+			}
+			if(correct_body)
+				return vdecs;
+		}
+		return std::vector<ASTVarDecl*>();
+	}
+	
+	//i think i was high when i wrote this
+	/*ASTNode * child(ASTNode * subroot, bool getElse)
+	{
+		if(is_of_type<ASTWhileState>(subroot))
+			return ((ASTWhileState*)subroot)->getState();
+		if(is_of_type<ASTLambdaThread>(subroot))
+			return ((ASTLambdaThread*)subroot)->getState();
+		if(is_of_type<ASTSelState>(subroot) && !getElse)
+			return ((ASTSelState*)subroot)->getIfBody();
+		if(is_of_type<ASTSelState>(subroot))
+			return ((ASTSelState*)subroot)->getElseBody();
+		if(is_of_type<ASTState>(subroot))
+			return child(((ASTState*)subroot)->getState(), getElse);
+		return nullptr;
+	}*/
+
+	std::vector<std::string> get_outofcontext_vars(ASTNode * subroot)
+	{
+		std::unordered_map<std::string, ASTVarDecl*> mvdecs;
+		std::vector<std::string> vdecs;
+		
+		//then get the var decls of the greater scope
+		ASTNode * last = subroot->getParent();
+		subroot = subroot->getParent();
+		while(subroot)
+		{
+			for(auto v : get_vardecls(subroot, last))
+			{
+				if(mvdecs.find(v->getIden()) != mvdecs.end())
+				{
+					mvdecs[v->getIden()] = v;
+					vdecs.push_back(v->getIden());
+				}
+			}
+			last = subroot;
+			subroot = subroot->getParent();
+		}
+		return vdecs;
+	}
 
 	int skip_paren(stream_t &stream, int start)
 	{
@@ -714,6 +864,7 @@ namespace naruto
 		{
 			vdc = new ASTVarDecl();
 			vdc->setParent(this);
+			
 			return vdc->parse(stream, start);
 		}
 		else

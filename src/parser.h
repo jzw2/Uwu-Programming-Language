@@ -543,27 +543,28 @@ namespace naruto
 
       clone_arguments.push_back(secret_func);
 
-      std::vector<llvm::Value*> malloc_arguments;
-      malloc_arguments.push_back(llvm::ConstantInt::get(sContext, llvm::APInt(64, (uint64_t) 1024 * 8)));
+      std::vector<llvm::Value*> calloc_arguments;
+      calloc_arguments.push_back(llvm::ConstantInt::get(sContext, llvm::APInt(64, (uint64_t) 1024 * 8)));
+      calloc_arguments.push_back(llvm::ConstantInt::get(sContext, llvm::APInt(64, 1)));
 
-      llvm::Function* malloc_func = sModule->getFunction("malloc");
-      if (malloc_func == nullptr) {
-        std::vector<llvm::Type *> malloc_types;
-        malloc_types.push_back(sBuilder.getInt64Ty());
-        llvm::FunctionType *malloc_type = llvm::FunctionType::get(sBuilder.getInt8Ty()->getPointerTo(), malloc_types, true);
-        malloc_func = llvm::Function::Create(malloc_type, llvm::Function::ExternalLinkage, "malloc", sModule.get());
+      llvm::Function* calloc_func = sModule->getFunction("calloc");
+      if (calloc_func == nullptr) {
+        std::vector<llvm::Type *> calloc_types;
+        calloc_types.push_back(sBuilder.getInt64Ty());
+        calloc_types.push_back(sBuilder.getInt64Ty());
+        llvm::FunctionType *calloc_type = llvm::FunctionType::get(sBuilder.getInt8Ty()->getPointerTo(), calloc_types, true);
+        calloc_func = llvm::Function::Create(calloc_type, llvm::Function::ExternalLinkage, "calloc", sModule.get());
       }
-      auto malloc_ptr = sBuilder.CreateCall(malloc_func, malloc_arguments, "clalling malloc");
+      auto calloc_ptr = sBuilder.CreateCall(calloc_func, calloc_arguments, "clalling calloc");
 
       
       auto index = llvm::ConstantInt::get(sContext, llvm::APInt(64, 1024 * 8));
-      auto stack_top = sBuilder.CreateGEP(malloc_ptr, index);
+      auto stack_top = sBuilder.CreateGEP(calloc_ptr, index);
       //create the gep arguments
       clone_arguments.push_back(stack_top);
-      clone_arguments.push_back(llvm::ConstantInt::get(sContext, llvm::APInt(32, 0)));
+      clone_arguments.push_back(llvm::ConstantInt::get(sContext, llvm::APInt(32, 256)));
+	  clone_arguments.push_back(llvm::Constant::getNullValue(sBuilder.getInt8Ty()->getPointerTo()));
 
-      auto flags = llvm::ConstantInt::get(sContext, llvm::APInt(32, 256));
-      clone_arguments.push_back(flags);
       return sBuilder.CreateCall(clone_func, clone_arguments, "clalling clone");
     }
   };
