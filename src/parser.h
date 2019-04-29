@@ -1,3 +1,5 @@
+#pragma once
+
 #include <vector>
 
 #include "llvm/IR/Value.h"
@@ -254,6 +256,8 @@ namespace naruto
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
 		virtual void print() override;
+	
+		std::string getIden() { return name->getIden(); }
 	};
 
 	class ASTState;
@@ -384,6 +388,13 @@ namespace naruto
 		virtual void print() override;
 		
 		void setRetExpr(ASTRetExpr *r) {retexpr = r;}
+		ASTNode * getState() { if(ws) return ws;
+			if(ss) return ss; 
+			if(expr) return expr; 
+			if(retexpr) return retexpr; 
+			if(thread) return thread; 
+			if(vdc) return vdc; 
+			return nullptr; }
 	};
 
 	class ASTFnDecl : public ASTNode
@@ -437,5 +448,7 @@ namespace naruto
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
 		virtual void print() override;
+		
+		std::vector<ASTVarDecl*> getGlobals() { return globals; }
 	};
 }
