@@ -533,18 +533,24 @@ namespace naruto
       std::vector<llvm::Value*> malloc_arguments;
       malloc_arguments.push_back(llvm::ConstantInt::get(sContext, llvm::APInt(64, (uint64_t) 1024 * 8)));
 
-      llvm::Function* func = sModule->getFunction("malloc");
-      if (func == nullptr) {
+      llvm::Function* malloc_func = sModule->getFunction("malloc");
+      if (malloc_func == nullptr) {
         std::vector<llvm::Type *> malloc_types;
         malloc_types.push_back(sBuilder.getInt64Ty());
         llvm::FunctionType *malloc_type = llvm::FunctionType::get(sBuilder.getInt8Ty()->getPointerTo(), malloc_types, true);
-        func = llvm::Function::Create(malloc_type, llvm::Function::ExternalLinkage, "malloc", sModule.get());
+        malloc_func = llvm::Function::Create(malloc_type, llvm::Function::ExternalLinkage, "malloc", sModule.get());
       }
+      auto malloc_ptr = sBuilder.CreateCall(malloc_func, malloc_arguments, "clalling malloc");
 
-      clone_arguments.push_back(llvm::Constant::getNullValue(sBuilder.getInt8Ty()->getPointerTo()));
+      
+      auto index = llvm::ConstantInt::get(sContext, llvm::APInt(64, 1024 * 8));
+      auto stack_top = sBuilder.CreateGEP(malloc_ptr, index);
+      //create the gep arguments
+      clone_arguments.push_back(stack_top);
       clone_arguments.push_back(llvm::ConstantInt::get(sContext, llvm::APInt(32, 0)));
-      clone_arguments.push_back(llvm::Constant::getNullValue(sBuilder.getInt8Ty()->getPointerTo()));
 
+      auto flags = llvm::ConstantInt::get(sContext, llvm::APInt(32, 256));
+      clone_arguments.push_back(flags);
       return sBuilder.CreateCall(clone_func, clone_arguments, "clalling clone");
     }
   };
