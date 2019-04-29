@@ -64,14 +64,29 @@ namespace naruto {
 				func = llvm::Function::Create(putsType, llvm::Function::ExternalLinkage, "puts", sModule.get());
 			} 
 			else if (iden->getIden() == "printf") 
-			{
-				//pro hack
-				
+			{//pro hack
 				std::vector<llvm::Type *> putsArgs;
 				putsArgs.push_back(sBuilder.getInt8Ty()->getPointerTo());
 				llvm::FunctionType *putsType = llvm::FunctionType::get(sBuilder.getInt32Ty(), putsArgs, true);
 				func = llvm::Function::Create(putsType, llvm::Function::ExternalLinkage, "printf", sModule.get());
 			} 
+      else if (iden->getIden() == "clone") {
+
+        
+        std::vector<llvm::Type *> anon_func_types_vec;
+        anon_func_types_vec.push_back(llvm::Type::getInt8Ty(sContext)->getPointerTo());
+        llvm::FunctionType *anon_func_type = llvm::FunctionType::get(llvm::Type::getInt32Ty(sContext), anon_func_types_vec, false);
+
+
+        std::vector<llvm::Type *> clone_types_vec;
+        clone_types_vec.push_back(anon_func_type);
+        clone_types_vec.push_back(sBuilder.getInt8Ty()->getPointerTo());
+        clone_types_vec.push_back(sBuilder.getInt32Ty());
+        clone_types_vec.push_back(sBuilder.getInt8Ty()->getPointerTo());
+
+        llvm::FunctionType *clone_type = llvm::FunctionType::get(sBuilder.getInt32Ty(), clone_types_vec, true);
+        auto clone_func = llvm::Function::Create(clone_type, llvm::Function::ExternalLinkage, "clone", sModule.get());
+      }
 		}
 		std::vector<llvm::Value*> args;
 		for (auto param : params) 
@@ -358,11 +373,54 @@ namespace naruto {
 
 	llvm::Value * ASTLambdaThread::generate() 
 	{
-		return nullptr;
+    auto old_block = sBuilder.GetInsertBlock();
+
+    std::string secret_func_name = "xx___secrete_FuncTion__";
+		std::vector<llvm::Type *> anon_func_types_vec;
+    anon_func_types_vec.push_back(llvm::Type::getInt8Ty(sContext)->getPointerTo());
+		llvm::FunctionType *anon_func_type = llvm::FunctionType::get(llvm::Type::getInt64Ty(sContext), anon_func_types_vec, false);
+		//created the function
+		llvm::Function* secret_func = llvm::Function::Create(anon_func_type, llvm::Function::ExternalLinkage, secret_func_name, sModule.get());
+
+		//creatirg fntuctiuon bady
+		llvm::BasicBlock *block = llvm::BasicBlock::Create(sContext, "entry point", secret_func);
+    sBuilder.SetInsertPoint(block);
+    for (auto &s : this->state) {
+      s->generate();
+    }
+
+    sBuilder.SetInsertPoint(old_block);
+
+    std::string secret_var = "__secret_variable";
+
+    long zero = 0;
+    ASTVarDecl* secret_init = new ASTVarDecl(secret_var, zero);
+    secret_init->generate();
+
+    auto left = ASTExpr::make_var(secret_var);
+    auto right = expr;
+    auto cond = ASTExpr::make_binop(left, "<", right);
+
+    std::vector<ASTState*> loop_statements;
+
+    CloneCall* cc = new CloneCall(secret_func_name);
+    auto clone_state = new ASTState((ASTExpr*)cc);
+    loop_statements.push_back(clone_state); //change this later
+
+    auto inc = ASTExpr::make_plus_plus(secret_var);
+    ASTVarDecl *dec = new ASTVarDecl(secret_var, inc);
+
+    auto state2 = new ASTState(dec);
+
+    loop_statements.push_back(state2);
+
+    ASTWhileState while_statement(cond, loop_statements);
+    while_statement.generate();
 	}
 
 	llvm::Value * ASTBinOp::generate()
 	{
+    //literally nothig
 		return nullptr;
 	}
 }

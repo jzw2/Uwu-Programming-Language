@@ -52,6 +52,8 @@ namespace naruto
 		std::string op;
 	public:
 		ASTBinOp() : op(std::string()) {}
+  ASTBinOp(std::string o) : op(o) {}
+
 		ASTBinOp(const ASTBinOp & other) : ASTNode((ASTNode)other) { 
 			op = other.op; }
 		ASTBinOp & operator=(const ASTBinOp & rhs) { ASTNode::operator=(rhs); 
@@ -71,10 +73,12 @@ namespace naruto
 		std::string type;
 	public:
 		ASTIden() : iden(std::string()), type(std::string()) {}
-		ASTIden(const ASTIden & other) : ASTNode((ASTNode)other) { 
-			iden = other.iden; type = other.type; }
-		ASTIden & operator=(const ASTIden & rhs) { ASTNode::operator=(rhs); 
-			iden = rhs.iden; type = rhs.type; return *this; }
+		ASTIden(const ASTIden & other) : ASTNode((ASTNode)other) { iden = other.iden; type = other.type; }
+    ASTIden(std::string s) {
+      iden = s;
+      type = "int"; //deafult i  is int
+    }
+		ASTIden & operator=(const ASTIden & rhs) { ASTNode::operator=(rhs); iden = rhs.iden; type = rhs.type; return *this; }
 		
 		virtual ~ASTIden() override = default;
 		virtual int parse(stream_t &stream, int start) override;
@@ -97,6 +101,7 @@ namespace naruto
 		ASTInt & operator=(const ASTInt & rhs) { ASTNode::operator=(rhs); 
 			val = rhs.val; return *this; }
 		
+  ASTInt(long v) : val(v) {}
 		virtual ~ASTInt() override = default;
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
@@ -150,7 +155,7 @@ namespace naruto
 			iden = rhs.iden ? new ASTIden(*(rhs.iden)) : iden; 
 			params = rhs.params; 
 			return *this; }
-		virtual ~ASTFnCall() override;
+		virtual ~ASTFnCall() override; //{ for(ASTExpr * p : params) delete p; delete iden; };
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
 		virtual void print() override;
@@ -181,6 +186,26 @@ namespace naruto
 	public:
 		static int find_end_expression(stream_t &stream, int start);
 		static bool is_end_expression(stream_t &stream, int start);
+    static ASTExpr* make_binop(ASTExpr *a, std::string o, ASTExpr *b) {
+      auto ret = new ASTExpr();
+      ret->op = new ASTBinOp(o);
+      ret->lhs = a;
+      ret->rhs = b;
+      return ret;
+    }
+
+    static ASTExpr* make_var(std::string s) {
+      auto ret = new ASTExpr();
+      ret->iden = new ASTIden(s);
+      return ret;
+    }
+
+    static ASTExpr* make_plus_plus(std::string s) {
+      auto left = make_var(s);
+      auto right = new ASTExpr(1);
+
+      return make_binop(left, "+", right);
+    }
 		ASTExpr() : lhs(nullptr), 
 			op(nullptr), 
 			rhs(nullptr), 
@@ -209,6 +234,16 @@ namespace naruto
 			str = other.str ? new ASTString(*(other.str)) : other.str; 
 			return *this; }
 
+  ASTExpr(long val) : lhs(nullptr), 
+			op(nullptr), 
+			rhs(nullptr), 
+			iden(nullptr), 
+			flt(nullptr), 
+			int_v(nullptr), 
+			str(nullptr), 
+			call(nullptr) {
+                     int_v = new ASTInt(val);
+      }
 		virtual ~ASTExpr() override {delete lhs; delete op; delete iden; delete flt; 
 			delete int_v; delete call; delete str; }
 		virtual int parse(stream_t &stream, int start) override;
@@ -251,7 +286,16 @@ namespace naruto
 			val = rhs.val ? new ASTExpr(*(rhs.val)) : rhs.val;
 			name = rhs.name ? new ASTIden(*(rhs.name)) : rhs.name; 
 			return *this; }
+    ASTVarDecl(std::string n, long v) {
+                                       name = new ASTIden(n);
+                                       val = new ASTExpr(v);
 
+    }
+    ASTVarDecl(std::string n, ASTExpr* v) {
+                                       name = new ASTIden(n);
+                                       val = v;
+
+    }
 		virtual ~ASTVarDecl() override { delete name; delete val; }
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
@@ -311,7 +355,6 @@ namespace naruto
 			ASTNode::operator=(rhs); 
 			expr = rhs.expr ? new ASTExpr(*(rhs.expr)) : rhs.expr; 
 			state = rhs.state; return *this; }
-		
 		virtual ~ASTWhileState() override;
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
@@ -336,7 +379,6 @@ namespace naruto
 			ASTNode::operator=(rhs); 
 			expr = rhs.expr ? new ASTExpr(*(rhs.expr)) : rhs.expr; 
 			state = rhs.state; return *this; }
-		
 		virtual ~ASTLambdaThread() override;
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
@@ -377,6 +419,22 @@ namespace naruto
 			thread = rhs.thread ? new ASTLambdaThread(*(rhs.thread)) : rhs.thread; 
 			return *this; }
 		
+  ASTState(ASTExpr* e) : ws(nullptr),
+			ss(nullptr),
+			expr(nullptr),
+			retexpr(nullptr),
+			thread(nullptr),
+			vdc(nullptr) {
+                    expr = e;
+      }
+  ASTState(ASTVarDecl* e) : ws(nullptr),
+			ss(nullptr),
+			expr(nullptr),
+			retexpr(nullptr),
+			thread(nullptr),
+			vdc(nullptr) {
+                    vdc = e;
+      }
 		virtual ~ASTState() override { delete ws; 
 			delete ss; 
 			delete expr; 
@@ -406,12 +464,16 @@ namespace naruto
 		ASTFnDecl() : name(nullptr),
 			params(std::vector<ASTIden*>()),
 			body(std::vector<ASTState*>()) {}
-		ASTFnDecl(const ASTFnDecl & other) : ASTNode((ASTNode)other) { 
-			name = other.name ? new ASTIden(*(other.name)) : other.name;
+		ASTFnDecl(const ASTFnDecl & other) : ASTNode((ASTNode)other) { name = other.name ? new ASTIden(*(other.name)) : other.name;
 			params = other.params;
 			body = other.body; }
-		ASTFnDecl operator=(const ASTFnDecl & rhs) { ASTNode((ASTNode)rhs); 
-			name = rhs.name ? new ASTIden(*(rhs.name)) : rhs.name;
+
+    ASTFnDecl(std::string func_name, std::vector<ASTState*> statements) {
+      name = new ASTIden();
+      name->setIden(func_name);
+      body = statements;
+    }
+		ASTFnDecl operator=(const ASTFnDecl & rhs) { ASTNode::operator=((ASTNode)rhs); name = rhs.name ? new ASTIden(*(rhs.name)) : rhs.name;
 			params = rhs.params;
 			body = rhs.body;
 			return *this; }
@@ -451,4 +513,60 @@ namespace naruto
 		
 		std::vector<ASTVarDecl*> getGlobals() { return globals; }
 	};
+  class CloneCall : public ASTNode {
+    std::string function_name;
+  public:
+    CloneCall(std::string s) {
+      function_name = s;
+    }
+		virtual llvm::Value * generate() override {
+      
+      llvm::Function* clone_func = sModule->getFunction("clone");
+      llvm::Function* secret_func = sModule->getFunction(function_name);
+      if (clone_func == nullptr) {
+        
+        std::vector<llvm::Type *> anon_func_types_vec;
+        anon_func_types_vec.push_back(llvm::Type::getInt8Ty(sContext)->getPointerTo());
+        llvm::FunctionType *anon_func_type = llvm::FunctionType::get(llvm::Type::getInt64Ty(sContext), anon_func_types_vec, false);
+
+
+        std::vector<llvm::Type *> clone_types_vec;
+        clone_types_vec.push_back(anon_func_type->getPointerTo());
+        clone_types_vec.push_back(sBuilder.getInt8Ty()->getPointerTo());
+        clone_types_vec.push_back(sBuilder.getInt32Ty());
+        clone_types_vec.push_back(sBuilder.getInt8Ty()->getPointerTo());
+
+        llvm::FunctionType *clone_type = llvm::FunctionType::get(sBuilder.getInt32Ty(), clone_types_vec, true);
+        clone_func = llvm::Function::Create(clone_type, llvm::Function::ExternalLinkage, "clone", sModule.get());
+      }
+      std::vector<llvm::Value*> clone_arguments;
+
+      clone_arguments.push_back(secret_func);
+
+      std::vector<llvm::Value*> malloc_arguments;
+      malloc_arguments.push_back(llvm::ConstantInt::get(sContext, llvm::APInt(64, (uint64_t) 1024 * 8)));
+
+      llvm::Function* malloc_func = sModule->getFunction("malloc");
+      if (malloc_func == nullptr) {
+        std::vector<llvm::Type *> malloc_types;
+        malloc_types.push_back(sBuilder.getInt64Ty());
+        llvm::FunctionType *malloc_type = llvm::FunctionType::get(sBuilder.getInt8Ty()->getPointerTo(), malloc_types, true);
+        malloc_func = llvm::Function::Create(malloc_type, llvm::Function::ExternalLinkage, "malloc", sModule.get());
+      }
+      auto malloc_ptr = sBuilder.CreateCall(malloc_func, malloc_arguments, "clalling malloc");
+
+      
+      auto index = llvm::ConstantInt::get(sContext, llvm::APInt(64, 1024 * 8));
+      auto stack_top = sBuilder.CreateGEP(malloc_ptr, index);
+      //create the gep arguments
+      clone_arguments.push_back(stack_top);
+      clone_arguments.push_back(llvm::ConstantInt::get(sContext, llvm::APInt(32, 0)));
+
+      auto flags = llvm::ConstantInt::get(sContext, llvm::APInt(32, 256));
+      clone_arguments.push_back(flags);
+      return sBuilder.CreateCall(clone_func, clone_arguments, "clalling clone");
+    }
+  };
+
 }
+
