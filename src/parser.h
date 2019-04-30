@@ -455,6 +455,9 @@ namespace naruto
 			if(thread) return thread; 
 			if(vdc) return vdc; 
 			return nullptr; }
+		ASTVarDecl *getVdc() {
+			return vdc
+			}
 	};
 
 	class ASTFnDecl : public ASTNode
@@ -517,61 +520,14 @@ namespace naruto
 		std::vector<ASTVarDecl*> getGlobals() { return globals; }
 	};
 	
-	class CloneCall : public ASTNode 
+	class CloneCall : public ASTExpr 
 	{
 		std::string function_name;
+		llvm::Value *param;
 	public:
-		CloneCall(std::string s) { function_name = s; }
+		CloneCall(std::string s, llvm::Value* p) { function_name = s; param = p;}
 
-		virtual llvm::Value * generate() override 
-		{
-			
-			llvm::Function* clone_func = sModule->getFunction("clone");
-			llvm::Function* secret_func = sModule->getFunction(function_name);
-			if (clone_func == nullptr) 
-			{
-				
-				std::vector<llvm::Type *> anon_func_types_vec;
-				anon_func_types_vec.push_back(llvm::Type::getInt8Ty(sContext)->getPointerTo());
-				llvm::FunctionType *anon_func_type = llvm::FunctionType::get(llvm::Type::getInt64Ty(sContext), anon_func_types_vec, false);
-
-
-				std::vector<llvm::Type *> clone_types_vec;
-				clone_types_vec.push_back(anon_func_type->getPointerTo());
-				clone_types_vec.push_back(sBuilder.getInt8Ty()->getPointerTo());
-				clone_types_vec.push_back(sBuilder.getInt32Ty());
-				clone_types_vec.push_back(sBuilder.getInt8Ty()->getPointerTo());
-
-				llvm::FunctionType *clone_type = llvm::FunctionType::get(sBuilder.getInt32Ty(), clone_types_vec, true);
-				clone_func = llvm::Function::Create(clone_type, llvm::Function::ExternalLinkage, "clone", sModule.get());
-			}
-			std::vector<llvm::Value*> clone_arguments;
-
-			clone_arguments.push_back(secret_func);
-
-			std::vector<llvm::Value*> calloc_arguments;
-			calloc_arguments.push_back(llvm::ConstantInt::get(sContext, llvm::APInt(64, (uint64_t) 1024 * 8)));
-			calloc_arguments.push_back(llvm::ConstantInt::get(sContext, llvm::APInt(64, 1)));
-
-			llvm::Function* calloc_func = sModule->getFunction("calloc");
-			if (calloc_func == nullptr) 
-			{
-				std::vector<llvm::Type *> calloc_types;
-				calloc_types.push_back(sBuilder.getInt64Ty());
-				calloc_types.push_back(sBuilder.getInt64Ty());
-				llvm::FunctionType *calloc_type = llvm::FunctionType::get(sBuilder.getInt8Ty()->getPointerTo(), calloc_types, true);
-				calloc_func = llvm::Function::Create(calloc_type, llvm::Function::ExternalLinkage, "calloc", sModule.get());
-			}
-			auto calloc_ptr = sBuilder.CreateCall(calloc_func, calloc_arguments, "clalling calloc");			
-			auto index = llvm::ConstantInt::get(sContext, llvm::APInt(64, 1024 * 8 - 1));
-			auto stack_top = sBuilder.CreateGEP(calloc_ptr, index);
-			//create the gep arguments
-			clone_arguments.push_back(stack_top);
-			clone_arguments.push_back(llvm::ConstantInt::get(sContext, llvm::APInt(32, 256)));
-			clone_arguments.push_back(llvm::Constant::getNullValue(sBuilder.getInt8Ty()->getPointerTo()));
-			
-			return sBuilder.CreateCall(clone_func, clone_arguments, "clalling clone");
-		}
+		virtual llvm::Value * generate() override ;
 	};
 
 }
