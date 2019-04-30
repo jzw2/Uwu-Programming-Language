@@ -474,6 +474,7 @@ namespace naruto
 			if(thread) return thread; 
 			if(vdc) return vdc; 
 			return nullptr; }
+		
 		ASTVarDecl *getVdc() { return vdc; }
 	};
 
