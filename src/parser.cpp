@@ -440,6 +440,18 @@ namespace naruto
 		return next_pos;
 	}
 	
+	bool ASTExpr::isInTree(std::string query)
+	{
+		if(iden && iden->getIden() == query)
+			return true;
+		bool res = false;
+		if(rhs)
+			res ||= rhs->isInTree(query);
+		if(lhs)
+			res ||= lhs->isInTree(query);
+		return res;
+	}
+	
 	bool ASTExpr::is_end_expression(stream_t &stream, int start)
 	{
 		if(start >= (int)(stream.size() - 1))

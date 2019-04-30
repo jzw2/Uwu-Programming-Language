@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <utility>
 
 #include "llvm/IR/Value.h"
 #include "llvm/ADT/APFloat.h"
@@ -40,6 +41,8 @@ namespace naruto
 		virtual ~ASTNode() = default;
 		virtual int parse(stream_t &stream, int start) { return -1; }
 		virtual llvm::Value * generate() { return nullptr; }
+		virtual llvm::Value * generate(std::vector<std::string> var_names, 
+			std::pair<llvm::Value *, llvm::Value *> var_vals) { return nullptr; }
 		virtual void print() {}
 		
 		ASTNode * getParent() { return parent; }
@@ -64,6 +67,8 @@ namespace naruto
 		virtual ~ASTBinOp() override = default;
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
+		virtual llvm::Value * generate(std::vector<std::string> var_names,
+			std::pair<llvm::Value *, llvm::Value *> var_vals) override;
 		virtual void print() override;
 
 		std::string getOp() {return op;}
@@ -85,6 +90,8 @@ namespace naruto
 		virtual ~ASTIden() override = default;
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
+		virtual llvm::Value * generate(std::vector<std::string> var_names,
+			std::pair<llvm::Value *, llvm::Value *> var_vals) override;
 		virtual void print() override;
 		
 		std::string getIden() {return iden;}
@@ -107,6 +114,8 @@ namespace naruto
 		virtual ~ASTInt() override = default;
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
+		virtual llvm::Value * generate(std::vector<std::string> var_names,
+			std::pair<llvm::Value *, llvm::Value *> var_vals) override;
 		virtual void print() override;
 		
 		void setVal(long v) {val = v;}
@@ -125,6 +134,8 @@ namespace naruto
 		virtual ~ASTFloat() override = default;
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
+		virtual llvm::Value * generate(std::vector<std::string> var_names,
+			std::pair<llvm::Value *, llvm::Value *> var_vals) override;
 		virtual void print() override;
 	};
 
@@ -139,6 +150,8 @@ namespace naruto
 		virtual ~ASTString() override = default;
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
+		virtual llvm::Value * generate(std::vector<std::string> var_names,
+			std::pair<llvm::Value *, llvm::Value *> var_vals) override;
 		virtual void print() override;
 	};
 
@@ -160,6 +173,8 @@ namespace naruto
 		virtual ~ASTFnCall() override; //{ for(ASTExpr * p : params) delete p; delete iden; };
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
+		virtual llvm::Value * generate(std::vector<std::string> var_names,
+			std::pair<llvm::Value *, llvm::Value *> var_vals) override;
 		virtual void print() override;
 		
 		static int get_end_fn_call(stream_t &stream, int start);
@@ -250,10 +265,12 @@ namespace naruto
 			delete int_v; delete call; delete str; }
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
+		virtual llvm::Value * generate(std::vector<std::string> var_names,
+			std::pair<llvm::Value *, llvm::Value *> var_vals) override;
 		virtual void print() override;
 
 		void setInt_V(ASTInt *i) {int_v = i;}
-		
+		bool isInTree(std::string query);
 	};
 
 	class ASTRetExpr : public ASTNode
@@ -269,6 +286,8 @@ namespace naruto
 		virtual ~ASTRetExpr() override { delete expr; }
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
+		virtual llvm::Value * generate(std::vector<std::string> var_names,
+			std::pair<llvm::Value *, llvm::Value *> var_vals) override;
 		virtual void print() override;
 	
 		void setExpr(ASTExpr *e) {expr = e;}
@@ -288,19 +307,15 @@ namespace naruto
 			val = rhs.val ? new ASTExpr(*(rhs.val)) : rhs.val;
 			name = rhs.name ? new ASTIden(*(rhs.name)) : rhs.name; 
 			return *this; }
-		ASTVarDecl(std::string n, long v) {
-																			 name = new ASTIden(n);
-																			 val = new ASTExpr(v);
-
-		}
-		ASTVarDecl(std::string n, ASTExpr* v) {
-																			 name = new ASTIden(n);
-																			 val = v;
-
-		}
+		ASTVarDecl(std::string n, long v) { name = new ASTIden(n);
+			val = new ASTExpr(v); }
+		ASTVarDecl(std::string n, ASTExpr* v) { name = new ASTIden(n);
+			val = v; }
 		virtual ~ASTVarDecl() override { delete name; delete val; }
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
+		virtual llvm::Value * generate(std::vector<std::string> var_names,
+			std::pair<llvm::Value *, llvm::Value *> var_vals) override;
 		virtual void print() override;
 	
 		std::string getIden() { return name->getIden(); }
@@ -335,6 +350,8 @@ namespace naruto
 		virtual ~ASTSelState() override;
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
+		virtual llvm::Value * generate(std::vector<std::string> var_names,
+			std::pair<llvm::Value *, llvm::Value *> var_vals) override;
 		virtual void print() override;
 	
 		std::vector<ASTState *> getIfBody() { return if_body; }
@@ -360,6 +377,8 @@ namespace naruto
 		virtual ~ASTWhileState() override;
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
+		virtual llvm::Value * generate(std::vector<std::string> var_names,
+			std::pair<llvm::Value *, llvm::Value *> var_vals) override;
 		virtual void print() override;
 		
 		std::vector<ASTState *> getState() { return state; }
@@ -384,6 +403,8 @@ namespace naruto
 		virtual ~ASTLambdaThread() override;
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
+		virtual llvm::Value * generate(std::vector<std::string> var_names,
+			std::pair<llvm::Value *, llvm::Value *> var_vals) override;
 		virtual void print() override;
 		
 		std::vector<ASTState *> getState() { return state; }
@@ -426,17 +447,13 @@ namespace naruto
 			expr(nullptr),
 			retexpr(nullptr),
 			thread(nullptr),
-			vdc(nullptr) {
-										expr = e;
-			}
+			vdc(nullptr) { expr = e; }
 	ASTState(ASTVarDecl* e) : ws(nullptr),
 			ss(nullptr),
 			expr(nullptr),
 			retexpr(nullptr),
 			thread(nullptr),
-			vdc(nullptr) {
-										vdc = e;
-			}
+			vdc(nullptr) { vdc = e; }
 		virtual ~ASTState() override { delete ws; 
 			delete ss; 
 			delete expr; 
@@ -445,6 +462,8 @@ namespace naruto
 			delete thread; }
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
+		virtual llvm::Value * generate(std::vector<std::string> var_names,
+			std::pair<llvm::Value *, llvm::Value *> var_vals) override;
 		virtual void print() override;
 		
 		void setRetExpr(ASTRetExpr *r) {retexpr = r;}
@@ -455,9 +474,7 @@ namespace naruto
 			if(thread) return thread; 
 			if(vdc) return vdc; 
 			return nullptr; }
-		ASTVarDecl *getVdc() {
-			return vdc
-			}
+		ASTVarDecl *getVdc() { return vdc; }
 	};
 
 	class ASTFnDecl : public ASTNode
@@ -488,6 +505,9 @@ namespace naruto
 			for(auto b : body) delete b; }
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
+		virtual llvm::Value * generate(std::vector<std::string> var_names,
+			std::pair<llvm::Value *, llvm::Value *> var_vals) override;
+
 		virtual void print() override;
 		
 		void setName(ASTIden *n) {name = n;}
@@ -514,6 +534,8 @@ namespace naruto
 			for(auto f : funcs) delete f; }
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
+		virtual llvm::Value * generate(std::vector<std::string> var_names,
+			std::pair<llvm::Value *, llvm::Value *> var_vals) override;
 		virtual void print() override;
 		
 		std::vector<ASTFnDecl*> getFuncs() { return funcs; }
@@ -527,7 +549,9 @@ namespace naruto
 	public:
 		CloneCall(std::string s, llvm::Value* p) { function_name = s; param = p;}
 
-		virtual llvm::Value * generate() override ;
+		virtual llvm::Value * generate() override;
+		virtual llvm::Value * generate(std::vector<std::string> var_names,
+			std::pair<llvm::Value *, llvm::Value *> var_vals) override;
 	};
 
 }
