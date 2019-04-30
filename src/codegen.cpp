@@ -370,6 +370,92 @@ namespace naruto {
 		//return llvm::ConstantDataArray::getString(sContext, llvm::StringRef(str));
 	}
 
+/*
+
+	 define void @spinlock(i8* %lock) alwaysinline {
+entry:
+br label %loop
+loop:
+%result = cmpxchg i8* %lock, i8 0, i8 1 acquire monotonic
+%success = extractvalue {i8, i1} %result, 1
+br i1 %success, label %done, label %loop
+done:
+ret void
+										}a */
+	llvm::Function* get_spinlock_func() {
+		llvm::Function* spin_lock_func = sModule->getFunction("spin_lock");
+		if (spin_lock_func == nullptr) 
+		{ 
+			auto old_block = sBuilder.GetInsertBlock();
+
+			std::vector<llvm::Type *> spin_lock_func_vec;
+			spin_lock_func_vec.push_back(llvm::Type::getInt8Ty(sContext)->getPointerTo());
+			llvm::FunctionType *spin_lock_func_type = llvm::FunctionType::get(llvm::Type::getInt64Ty(sContext), spin_lock_func_vec, false);
+			
+
+			spin_lock_func = llvm::Function::Create(spin_lock_func_type, llvm::Function::ExternalLinkage, "spin_lock", sModule.get());
+
+
+			llvm::BasicBlock *block = llvm::BasicBlock::Create(sContext, "spnilock loop", spin_lock_func); 
+			llvm::BasicBlock *merge_block = llvm::BasicBlock::Create(sContext, " merge spnilokc block", spin_lock_func); 
+
+			sBuilder.SetInsertPoint(block);
+
+
+			llvm::Value*  lock = &*spin_lock_func->arg_begin();
+
+			auto result = sBuilder.CreateAtomicCmpXchg(lock, llvm::ConstantInt::get(sContext, llvm::APInt(8, 0)),llvm::ConstantInt::get(sContext, llvm::APInt(8, 1) ), llvm::AtomicOrdering::Acquire, llvm::AtomicOrdering::Monotonic);
+
+			
+			std::vector<unsigned> indexes;
+			indexes.push_back(1);
+			auto success = sBuilder.CreateExtractValue(result, indexes, "success");
+
+			sBuilder.CreateCondBr(success, merge_block, block);
+
+			sBuilder.SetInsertPoint(merge_block);
+			sBuilder.CreateRetVoid();
+			sBuilder.SetInsertPoint(old_block);
+
+			
+
+		}
+		return spin_lock_func;
+	}
+
+	llvm::Function* get_spinlock_unlock_func() {
+		llvm::Function* spinlock_unlock = sModule->getFunction("spin_lock_unlock");
+		if (spinlock_unlock == nullptr) 
+		{ 
+			auto old_block = sBuilder.GetInsertBlock();
+
+			std::vector<llvm::Type *> spinlock_unlock_func_vec;
+			spinlock_unlock_func_vec.push_back(llvm::Type::getInt8Ty(sContext)->getPointerTo());
+			llvm::FunctionType *spin_lock_unlock_func_type = llvm::FunctionType::get(llvm::Type::getInt64Ty(sContext), spinlock_unlock_func_vec, false);
+			
+
+			spinlock_unlock = llvm::Function::Create(spin_lock_unlock_func_type, llvm::Function::ExternalLinkage, "spin_lock", sModule.get());
+
+
+			llvm::BasicBlock *block = llvm::BasicBlock::Create(sContext, "body", spinlock_unlock); 
+
+			sBuilder.SetInsertPoint(block);
+
+
+			llvm::Value*  lock = &*spinlock_unlock->arg_begin();
+
+			sBuilder.CreateFence(llvm::AtomicOrdering::Release);
+
+			
+			sBuilder.CreateStore(llvm::ConstantInt::get(sContext, llvm::APInt(8, 0)), lock);
+			sBuilder.CreateRetVoid();
+			sBuilder.SetInsertPoint(old_block);
+
+			
+
+		}
+		return spinlock_unlock ;
+	}
 	llvm::Value * ASTLambdaThread::generate() 
 	{
 		auto old_block = sBuilder.GetInsertBlock();
