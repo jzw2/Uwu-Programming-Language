@@ -1,0 +1,5 @@
+the argument passed into the cloned function is an array listing all vars used
+A) when storing/loading the values here, we must spinlock
+B) the 0th index of this array stores the barrier variable
+C) the 1st index of this array stores the "this thread's ID" variable
+D) we get the index of some variable here by referencing the order they appear from get_outofcontext_vars

@@ -22,7 +22,6 @@ namespace naruto
 {
 	typedef std::vector<Lex> stream_t;
 
-	std::vector<std::string> get_outofcontext_vars(); 
 
 	extern llvm::LLVMContext sContext;
 	extern llvm::IRBuilder<> sBuilder;
@@ -46,13 +45,16 @@ namespace naruto
 		ASTNode * getParent() { return parent; }
 		void setParent(ASTNode * par) { parent = par; }
 	};
+	
+	//this is for much later, for the clone
+	std::vector<std::string> get_outofcontext_vars(ASTNode * subroot);
 
 	class ASTBinOp : public ASTNode
 	{
 		std::string op;
 	public:
 		ASTBinOp() : op(std::string()) {}
-  ASTBinOp(std::string o) : op(o) {}
+	ASTBinOp(std::string o) : op(o) {}
 
 		ASTBinOp(const ASTBinOp & other) : ASTNode((ASTNode)other) { 
 			op = other.op; }
@@ -74,10 +76,10 @@ namespace naruto
 	public:
 		ASTIden() : iden(std::string()), type(std::string()) {}
 		ASTIden(const ASTIden & other) : ASTNode((ASTNode)other) { iden = other.iden; type = other.type; }
-    ASTIden(std::string s) {
-      iden = s;
-      type = "int"; //deafult i  is int
-    }
+		ASTIden(std::string s) {
+			iden = s;
+			type = "int"; //deafult i	is int
+		}
 		ASTIden & operator=(const ASTIden & rhs) { ASTNode::operator=(rhs); iden = rhs.iden; type = rhs.type; return *this; }
 		
 		virtual ~ASTIden() override = default;
@@ -101,7 +103,7 @@ namespace naruto
 		ASTInt & operator=(const ASTInt & rhs) { ASTNode::operator=(rhs); 
 			val = rhs.val; return *this; }
 		
-  ASTInt(long v) : val(v) {}
+	ASTInt(long v) : val(v) {}
 		virtual ~ASTInt() override = default;
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
@@ -186,26 +188,26 @@ namespace naruto
 	public:
 		static int find_end_expression(stream_t &stream, int start);
 		static bool is_end_expression(stream_t &stream, int start);
-    static ASTExpr* make_binop(ASTExpr *a, std::string o, ASTExpr *b) {
-      auto ret = new ASTExpr();
-      ret->op = new ASTBinOp(o);
-      ret->lhs = a;
-      ret->rhs = b;
-      return ret;
-    }
+		static ASTExpr* make_binop(ASTExpr *a, std::string o, ASTExpr *b) {
+			auto ret = new ASTExpr();
+			ret->op = new ASTBinOp(o);
+			ret->lhs = a;
+			ret->rhs = b;
+			return ret;
+		}
 
-    static ASTExpr* make_var(std::string s) {
-      auto ret = new ASTExpr();
-      ret->iden = new ASTIden(s);
-      return ret;
-    }
+		static ASTExpr* make_var(std::string s) {
+			auto ret = new ASTExpr();
+			ret->iden = new ASTIden(s);
+			return ret;
+		}
 
-    static ASTExpr* make_plus_plus(std::string s) {
-      auto left = make_var(s);
-      auto right = new ASTExpr(1);
+		static ASTExpr* make_plus_plus(std::string s) {
+			auto left = make_var(s);
+			auto right = new ASTExpr(1);
 
-      return make_binop(left, "+", right);
-    }
+			return make_binop(left, "+", right);
+		}
 		ASTExpr() : lhs(nullptr), 
 			op(nullptr), 
 			rhs(nullptr), 
@@ -234,7 +236,7 @@ namespace naruto
 			str = other.str ? new ASTString(*(other.str)) : other.str; 
 			return *this; }
 
-  ASTExpr(long val) : lhs(nullptr), 
+	ASTExpr(long val) : lhs(nullptr), 
 			op(nullptr), 
 			rhs(nullptr), 
 			iden(nullptr), 
@@ -242,8 +244,8 @@ namespace naruto
 			int_v(nullptr), 
 			str(nullptr), 
 			call(nullptr) {
-                     int_v = new ASTInt(val);
-      }
+										 int_v = new ASTInt(val);
+			}
 		virtual ~ASTExpr() override {delete lhs; delete op; delete iden; delete flt; 
 			delete int_v; delete call; delete str; }
 		virtual int parse(stream_t &stream, int start) override;
@@ -286,16 +288,16 @@ namespace naruto
 			val = rhs.val ? new ASTExpr(*(rhs.val)) : rhs.val;
 			name = rhs.name ? new ASTIden(*(rhs.name)) : rhs.name; 
 			return *this; }
-    ASTVarDecl(std::string n, long v) {
-                                       name = new ASTIden(n);
-                                       val = new ASTExpr(v);
+		ASTVarDecl(std::string n, long v) {
+																			 name = new ASTIden(n);
+																			 val = new ASTExpr(v);
 
-    }
-    ASTVarDecl(std::string n, ASTExpr* v) {
-                                       name = new ASTIden(n);
-                                       val = v;
+		}
+		ASTVarDecl(std::string n, ASTExpr* v) {
+																			 name = new ASTIden(n);
+																			 val = v;
 
-    }
+		}
 		virtual ~ASTVarDecl() override { delete name; delete val; }
 		virtual int parse(stream_t &stream, int start) override;
 		virtual llvm::Value * generate() override;
@@ -419,22 +421,22 @@ namespace naruto
 			thread = rhs.thread ? new ASTLambdaThread(*(rhs.thread)) : rhs.thread; 
 			return *this; }
 		
-  ASTState(ASTExpr* e) : ws(nullptr),
+	ASTState(ASTExpr* e) : ws(nullptr),
 			ss(nullptr),
 			expr(nullptr),
 			retexpr(nullptr),
 			thread(nullptr),
 			vdc(nullptr) {
-                    expr = e;
-      }
-  ASTState(ASTVarDecl* e) : ws(nullptr),
+										expr = e;
+			}
+	ASTState(ASTVarDecl* e) : ws(nullptr),
 			ss(nullptr),
 			expr(nullptr),
 			retexpr(nullptr),
 			thread(nullptr),
 			vdc(nullptr) {
-                    vdc = e;
-      }
+										vdc = e;
+			}
 		virtual ~ASTState() override { delete ws; 
 			delete ss; 
 			delete expr; 
@@ -468,11 +470,11 @@ namespace naruto
 			params = other.params;
 			body = other.body; }
 
-    ASTFnDecl(std::string func_name, std::vector<ASTState*> statements) {
-      name = new ASTIden();
-      name->setIden(func_name);
-      body = statements;
-    }
+		ASTFnDecl(std::string func_name, std::vector<ASTState*> statements) {
+			name = new ASTIden();
+			name->setIden(func_name);
+			body = statements;
+		}
 		ASTFnDecl operator=(const ASTFnDecl & rhs) { ASTNode::operator=((ASTNode)rhs); name = rhs.name ? new ASTIden(*(rhs.name)) : rhs.name;
 			params = rhs.params;
 			body = rhs.body;
@@ -511,63 +513,66 @@ namespace naruto
 		virtual llvm::Value * generate() override;
 		virtual void print() override;
 		
+		std::vector<ASTFnDecl*> getFuncs() { return funcs; }
 		std::vector<ASTVarDecl*> getGlobals() { return globals; }
 	};
-  class CloneCall : public ASTNode {
-    std::string function_name;
-  public:
-    CloneCall(std::string s) {
-      function_name = s;
-    }
-		virtual llvm::Value * generate() override {
-      
-      llvm::Function* clone_func = sModule->getFunction("clone");
-      llvm::Function* secret_func = sModule->getFunction(function_name);
-      if (clone_func == nullptr) {
-        
-        std::vector<llvm::Type *> anon_func_types_vec;
-        anon_func_types_vec.push_back(llvm::Type::getInt8Ty(sContext)->getPointerTo());
-        llvm::FunctionType *anon_func_type = llvm::FunctionType::get(llvm::Type::getInt64Ty(sContext), anon_func_types_vec, false);
+	
+	class CloneCall : public ASTNode 
+	{
+		std::string function_name;
+	public:
+		CloneCall(std::string s) { function_name = s; }
+
+		virtual llvm::Value * generate() override 
+		{
+			
+			llvm::Function* clone_func = sModule->getFunction("clone");
+			llvm::Function* secret_func = sModule->getFunction(function_name);
+			if (clone_func == nullptr) 
+			{
+				
+				std::vector<llvm::Type *> anon_func_types_vec;
+				anon_func_types_vec.push_back(llvm::Type::getInt8Ty(sContext)->getPointerTo());
+				llvm::FunctionType *anon_func_type = llvm::FunctionType::get(llvm::Type::getInt64Ty(sContext), anon_func_types_vec, false);
 
 
-        std::vector<llvm::Type *> clone_types_vec;
-        clone_types_vec.push_back(anon_func_type->getPointerTo());
-        clone_types_vec.push_back(sBuilder.getInt8Ty()->getPointerTo());
-        clone_types_vec.push_back(sBuilder.getInt32Ty());
-        clone_types_vec.push_back(sBuilder.getInt8Ty()->getPointerTo());
+				std::vector<llvm::Type *> clone_types_vec;
+				clone_types_vec.push_back(anon_func_type->getPointerTo());
+				clone_types_vec.push_back(sBuilder.getInt8Ty()->getPointerTo());
+				clone_types_vec.push_back(sBuilder.getInt32Ty());
+				clone_types_vec.push_back(sBuilder.getInt8Ty()->getPointerTo());
 
-        llvm::FunctionType *clone_type = llvm::FunctionType::get(sBuilder.getInt32Ty(), clone_types_vec, true);
-        clone_func = llvm::Function::Create(clone_type, llvm::Function::ExternalLinkage, "clone", sModule.get());
-      }
-      std::vector<llvm::Value*> clone_arguments;
+				llvm::FunctionType *clone_type = llvm::FunctionType::get(sBuilder.getInt32Ty(), clone_types_vec, true);
+				clone_func = llvm::Function::Create(clone_type, llvm::Function::ExternalLinkage, "clone", sModule.get());
+			}
+			std::vector<llvm::Value*> clone_arguments;
 
-      clone_arguments.push_back(secret_func);
+			clone_arguments.push_back(secret_func);
 
-      std::vector<llvm::Value*> calloc_arguments;
-      calloc_arguments.push_back(llvm::ConstantInt::get(sContext, llvm::APInt(64, (uint64_t) 1024 * 8)));
-      calloc_arguments.push_back(llvm::ConstantInt::get(sContext, llvm::APInt(64, 1)));
+			std::vector<llvm::Value*> calloc_arguments;
+			calloc_arguments.push_back(llvm::ConstantInt::get(sContext, llvm::APInt(64, (uint64_t) 1024 * 8)));
+			calloc_arguments.push_back(llvm::ConstantInt::get(sContext, llvm::APInt(64, 1)));
 
-      llvm::Function* calloc_func = sModule->getFunction("calloc");
-      if (calloc_func == nullptr) {
-        std::vector<llvm::Type *> calloc_types;
-        calloc_types.push_back(sBuilder.getInt64Ty());
-        calloc_types.push_back(sBuilder.getInt64Ty());
-        llvm::FunctionType *calloc_type = llvm::FunctionType::get(sBuilder.getInt8Ty()->getPointerTo(), calloc_types, true);
-        calloc_func = llvm::Function::Create(calloc_type, llvm::Function::ExternalLinkage, "calloc", sModule.get());
-      }
-      auto calloc_ptr = sBuilder.CreateCall(calloc_func, calloc_arguments, "clalling calloc");
-
-      
-      auto index = llvm::ConstantInt::get(sContext, llvm::APInt(64, 1024 * 8));
-      auto stack_top = sBuilder.CreateGEP(calloc_ptr, index);
-      //create the gep arguments
-      clone_arguments.push_back(stack_top);
-      clone_arguments.push_back(llvm::ConstantInt::get(sContext, llvm::APInt(32, 256)));
-	  clone_arguments.push_back(llvm::Constant::getNullValue(sBuilder.getInt8Ty()->getPointerTo()));
-
-      return sBuilder.CreateCall(clone_func, clone_arguments, "clalling clone");
-    }
-  };
+			llvm::Function* calloc_func = sModule->getFunction("calloc");
+			if (calloc_func == nullptr) 
+			{
+				std::vector<llvm::Type *> calloc_types;
+				calloc_types.push_back(sBuilder.getInt64Ty());
+				calloc_types.push_back(sBuilder.getInt64Ty());
+				llvm::FunctionType *calloc_type = llvm::FunctionType::get(sBuilder.getInt8Ty()->getPointerTo(), calloc_types, true);
+				calloc_func = llvm::Function::Create(calloc_type, llvm::Function::ExternalLinkage, "calloc", sModule.get());
+			}
+			auto calloc_ptr = sBuilder.CreateCall(calloc_func, calloc_arguments, "clalling calloc");			
+			auto index = llvm::ConstantInt::get(sContext, llvm::APInt(64, 1024 * 8 - 1));
+			auto stack_top = sBuilder.CreateGEP(calloc_ptr, index);
+			//create the gep arguments
+			clone_arguments.push_back(stack_top);
+			clone_arguments.push_back(llvm::ConstantInt::get(sContext, llvm::APInt(32, 256)));
+			clone_arguments.push_back(llvm::Constant::getNullValue(sBuilder.getInt8Ty()->getPointerTo()));
+			
+			return sBuilder.CreateCall(clone_func, clone_arguments, "clalling clone");
+		}
+	};
 
 }
 

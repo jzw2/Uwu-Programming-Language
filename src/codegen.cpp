@@ -24,13 +24,10 @@ namespace naruto {
 
 	llvm::Value * ASTIden::generate()
 	{
-		//i think thi will work
-   
-    std::string func_name = sBuilder.GetInsertBlock()->getParent()->getName();
+		//i think this will work
+	 
+		std::string func_name = sBuilder.GetInsertBlock()->getParent()->getName();
 		llvm::Value *v = sLocals[func_name + iden];
-
-	
-		
 		if (v == nullptr) 
 		{
 			std::cerr << "It's not like a wanted to be instatiated or anything, baka!" << iden << std::endl;
@@ -70,23 +67,23 @@ namespace naruto {
 				llvm::FunctionType *putsType = llvm::FunctionType::get(sBuilder.getInt32Ty(), putsArgs, true);
 				func = llvm::Function::Create(putsType, llvm::Function::ExternalLinkage, "printf", sModule.get());
 			} 
-      else if (iden->getIden() == "clone") {
+			else if (iden->getIden() == "clone") {
 
-        
-        std::vector<llvm::Type *> anon_func_types_vec;
-        anon_func_types_vec.push_back(llvm::Type::getInt8Ty(sContext)->getPointerTo());
-        llvm::FunctionType *anon_func_type = llvm::FunctionType::get(llvm::Type::getInt32Ty(sContext), anon_func_types_vec, false);
+				
+				std::vector<llvm::Type *> anon_func_types_vec;
+				anon_func_types_vec.push_back(llvm::Type::getInt8Ty(sContext)->getPointerTo());
+				llvm::FunctionType *anon_func_type = llvm::FunctionType::get(llvm::Type::getInt32Ty(sContext), anon_func_types_vec, false);
 
 
-        std::vector<llvm::Type *> clone_types_vec;
-        clone_types_vec.push_back(anon_func_type);
-        clone_types_vec.push_back(sBuilder.getInt8Ty()->getPointerTo());
-        clone_types_vec.push_back(sBuilder.getInt32Ty());
-        clone_types_vec.push_back(sBuilder.getInt8Ty()->getPointerTo());
+				std::vector<llvm::Type *> clone_types_vec;
+				clone_types_vec.push_back(anon_func_type);
+				clone_types_vec.push_back(sBuilder.getInt8Ty()->getPointerTo());
+				clone_types_vec.push_back(sBuilder.getInt32Ty());
+				clone_types_vec.push_back(sBuilder.getInt8Ty()->getPointerTo());
 
-        llvm::FunctionType *clone_type = llvm::FunctionType::get(sBuilder.getInt32Ty(), clone_types_vec, true);
-        auto clone_func = llvm::Function::Create(clone_type, llvm::Function::ExternalLinkage, "clone", sModule.get());
-      }
+				llvm::FunctionType *clone_type = llvm::FunctionType::get(sBuilder.getInt32Ty(), clone_types_vec, true);
+				auto clone_func = llvm::Function::Create(clone_type, llvm::Function::ExternalLinkage, "clone", sModule.get());
+			}
 		}
 		std::vector<llvm::Value*> args;
 		for (auto param : params) 
@@ -125,21 +122,21 @@ namespace naruto {
 				auto rightType = right->getType();
 				return	sBuilder.CreateICmpEQ(left, right, "camping");
 			}
-      else if (op->getOp() == ">")
-      {
+			else if (op->getOp() == ">")
+			{
 				auto leftType = left->getType();
 				auto rightType = right->getType();
 				return	sBuilder.CreateICmpSGT(left, right, "comparing greater than");
-      }
-      else if (op->getOp() == "<")
-        {
-          auto leftType = left->getType();
-          auto rightType = right->getType();
-          return	sBuilder.CreateICmpSLT(left, right, "comparing less than than");
-        }
+			}
+			else if (op->getOp() == "<")
+				{
+					auto leftType = left->getType();
+					auto rightType = right->getType();
+					return	sBuilder.CreateICmpSLT(left, right, "comparing less than than");
+				}
 			else 
 			{
-        std::cerr << "unable to regecognize operator " << op->getOp() << std::endl;
+				std::cerr << "unable to regecognize operator " << op->getOp() << std::endl;
 				return nullptr; //uh oh
 			}
 		} 
@@ -187,9 +184,11 @@ namespace naruto {
 		{
 			std::cerr << name << "-dono was null! Kowai!" << std::endl;
 		}
+
 		// Store the initial value into the alloca.
-    std::string func_name = sBuilder.GetInsertBlock()->getParent()->getName();
-    std::string full_name = func_name + name->getIden();
+		std::string func_name = sBuilder.GetInsertBlock()->getParent()->getName();
+		std::string full_name = func_name + name->getIden();
+		
 		if (sLocals.count(full_name)) 
 		{	
 			alloc = sLocals[full_name];
@@ -197,9 +196,9 @@ namespace naruto {
 		} 
 		else 
 		{
-      auto generated_val = val->generate();
+			auto generated_val = val->generate();
 			alloc = sBuilder.CreateAlloca(llvm::Type::getInt64Ty(sContext));
-      //llvm::ConstantInt::get(sContext, llvm::APInt(64, (uint64_t) val));
+			//llvm::ConstantInt::get(sContext, llvm::APInt(64, (uint64_t) val));
 			sBuilder.CreateStore(generated_val, alloc);
 			sLocals[full_name] = alloc;
 		}
@@ -224,11 +223,11 @@ namespace naruto {
 		{
 			then_state->generate();
 		}
-    auto last_instr = sBuilder.GetInsertBlock()->getTerminator();
-    if (last_instr == nullptr || std::string("ret") != last_instr->getOpcodeName())
-    {
-      sBuilder.CreateBr(merge_block);
-    }
+		auto last_instr = sBuilder.GetInsertBlock()->getTerminator();
+		if (last_instr == nullptr || std::string("ret") != last_instr->getOpcodeName())
+		{
+			sBuilder.CreateBr(merge_block);
+		}
 		then_block = sBuilder.GetInsertBlock();
 		func->getBasicBlockList().push_back(else_block);
 		sBuilder.SetInsertPoint(else_block); 
@@ -243,11 +242,11 @@ namespace naruto {
 				else_statement->generate();
 			}
 		}
-    auto last_instr2 = sBuilder.GetInsertBlock()->getTerminator();
-    if (last_instr2 == nullptr || std::string("ret") != last_instr2->getOpcodeName())
-      {
-        sBuilder.CreateBr(merge_block);
-      }
+		auto last_instr2 = sBuilder.GetInsertBlock()->getTerminator();
+		if (last_instr2 == nullptr || std::string("ret") != last_instr2->getOpcodeName())
+			{
+				sBuilder.CreateBr(merge_block);
+			}
 		else_block = sBuilder.GetInsertBlock();
 	
 	
@@ -265,7 +264,7 @@ namespace naruto {
 		llvm::BasicBlock* body_block = llvm::BasicBlock::Create(sContext, "while body", func);
 		llvm::BasicBlock* merge_block = llvm::BasicBlock::Create(sContext, "merge", func);
 
-    sBuilder.CreateBr(check_block);
+		sBuilder.CreateBr(check_block);
 
 		sBuilder.SetInsertPoint(check_block);
 		auto condition = expr->generate();
@@ -273,12 +272,12 @@ namespace naruto {
 
 
 		sBuilder.SetInsertPoint(body_block);
-    for (auto& statement :  state) {
-      statement->generate();
-    }
-    sBuilder.CreateBr(check_block);
+		for (auto& statement :	state) {
+			statement->generate();
+		}
+		sBuilder.CreateBr(check_block);
 
-    
+		
 		sBuilder.SetInsertPoint(merge_block);
 		return nullptr;
 	}
@@ -344,8 +343,8 @@ namespace naruto {
 	
 			// Add arguments to variable symbol table.
 			arg.setName(params[index]->getIden());
-      std::string func_name = func->getName();
-      std::string full_name = func_name + std::string(arg.getName());
+			std::string func_name = func->getName();
+			std::string full_name = func_name + std::string(arg.getName());
 			sLocals[full_name] = alloc;
 		}
 		for (auto state : body) 
@@ -373,54 +372,54 @@ namespace naruto {
 
 	llvm::Value * ASTLambdaThread::generate() 
 	{
-    auto old_block = sBuilder.GetInsertBlock();
+		auto old_block = sBuilder.GetInsertBlock();
 
-    std::string secret_func_name = "xx___secrete_FuncTion__";
+		std::string secret_func_name = "xx___secrete_FuncTion__";
 		std::vector<llvm::Type *> anon_func_types_vec;
-    anon_func_types_vec.push_back(llvm::Type::getInt8Ty(sContext)->getPointerTo());
+		anon_func_types_vec.push_back(llvm::Type::getInt8Ty(sContext)->getPointerTo());
 		llvm::FunctionType *anon_func_type = llvm::FunctionType::get(llvm::Type::getInt64Ty(sContext), anon_func_types_vec, false);
 		//created the function
 		llvm::Function* secret_func = llvm::Function::Create(anon_func_type, llvm::Function::ExternalLinkage, secret_func_name, sModule.get());
 
 		//creatirg fntuctiuon bady
 		llvm::BasicBlock *block = llvm::BasicBlock::Create(sContext, "entry point", secret_func);
-    sBuilder.SetInsertPoint(block);
-    for (auto &s : this->state) {
-      s->generate();
-    }
+		sBuilder.SetInsertPoint(block);
+		for (auto &s : this->state) {
+			s->generate();
+		}
 
-    sBuilder.SetInsertPoint(old_block);
+		sBuilder.SetInsertPoint(old_block);
 
-    std::string secret_var = "__secret_variable";
+		std::string secret_var = "__secret_variable";
 
-    long zero = 0;
-    ASTVarDecl* secret_init = new ASTVarDecl(secret_var, zero);
-    secret_init->generate();
+		long zero = 0;
+		ASTVarDecl* secret_init = new ASTVarDecl(secret_var, zero);
+		secret_init->generate();
 
-    auto left = ASTExpr::make_var(secret_var);
-    auto right = expr;
-    auto cond = ASTExpr::make_binop(left, "<", right);
+		auto left = ASTExpr::make_var(secret_var);
+		auto right = expr;
+		auto cond = ASTExpr::make_binop(left, "<", right);
 
-    std::vector<ASTState*> loop_statements;
+		std::vector<ASTState*> loop_statements;
 
-    CloneCall* cc = new CloneCall(secret_func_name);
-    auto clone_state = new ASTState((ASTExpr*)cc);
-    loop_statements.push_back(clone_state); //change this later
+		CloneCall* cc = new CloneCall(secret_func_name);
+		auto clone_state = new ASTState((ASTExpr*)cc);
+		loop_statements.push_back(clone_state); //change this later
 
-    auto inc = ASTExpr::make_plus_plus(secret_var);
-    ASTVarDecl *dec = new ASTVarDecl(secret_var, inc);
+		auto inc = ASTExpr::make_plus_plus(secret_var);
+		ASTVarDecl *dec = new ASTVarDecl(secret_var, inc);
 
-    auto state2 = new ASTState(dec);
+		auto state2 = new ASTState(dec);
 
-    loop_statements.push_back(state2);
+		loop_statements.push_back(state2);
 
-    ASTWhileState while_statement(cond, loop_statements);
-    while_statement.generate();
+		ASTWhileState while_statement(cond, loop_statements);
+		while_statement.generate();
 	}
 
 	llvm::Value * ASTBinOp::generate()
 	{
-    //literally nothig
+		//literally nothig
 		return nullptr;
 	}
 }

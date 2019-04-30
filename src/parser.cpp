@@ -44,9 +44,11 @@ namespace naruto
 	std::vector<ASTVarDecl*> get_vardecls(ASTNode * node, ASTNode * toMatch)
 	{
 		if(is_of_type<ASTState>(node)) {
+			std::cout << "We are a state" << std::endl;
 			ASTNode * scope = ((ASTState*)node)->getState();
 			if(is_of_type<ASTSelState>(scope))
 			{
+				std::cout << "We are sel" << std::endl;
 				std::vector<ASTVarDecl*> vdecs;
 				bool correct_body = false;
 				for(auto s : ((ASTSelState*)scope)->getIfBody())
@@ -77,6 +79,7 @@ namespace naruto
 			}
 			else if(is_of_type<ASTWhileState>(scope))
 			{
+				std::cout << "We are while" << std::endl;
 				std::vector<ASTVarDecl*> vdecs;
 				bool correct_body = false;
 				for(auto s : ((ASTWhileState*)scope)->getState())
@@ -94,6 +97,7 @@ namespace naruto
 			}
 			else if(is_of_type<ASTLambdaThread>(scope))
 			{
+				std::cout << "We are thread" << std::endl;
 				std::vector<ASTVarDecl*> vdecs;
 				bool correct_body = false;
 				for(auto s : ((ASTLambdaThread*)scope)->getState())
@@ -112,6 +116,7 @@ namespace naruto
 		}
 		else if(is_of_type<ASTFnDecl>(node))
 		{
+			std::cout << "We are a func" << std::endl;
 			std::vector<ASTVarDecl*> vdecs;
 			bool correct_body = false;
 			for(auto s : ((ASTFnDecl*)node)->getBody())
@@ -129,6 +134,7 @@ namespace naruto
 		}
 		else if(is_of_type<ASTRoot>(node))
 		{
+			std::cout << "We are the root" << std::endl;
 			std::vector<ASTVarDecl*> vdecs;
 			bool correct_body = false;
 			for(auto s : ((ASTRoot*)node)->getGlobals())
@@ -141,35 +147,21 @@ namespace naruto
 		return std::vector<ASTVarDecl*>();
 	}
 	
-	//i think i was high when i wrote this
-	/*ASTNode * child(ASTNode * subroot, bool getElse)
-	{
-		if(is_of_type<ASTWhileState>(subroot))
-			return ((ASTWhileState*)subroot)->getState();
-		if(is_of_type<ASTLambdaThread>(subroot))
-			return ((ASTLambdaThread*)subroot)->getState();
-		if(is_of_type<ASTSelState>(subroot) && !getElse)
-			return ((ASTSelState*)subroot)->getIfBody();
-		if(is_of_type<ASTSelState>(subroot))
-			return ((ASTSelState*)subroot)->getElseBody();
-		if(is_of_type<ASTState>(subroot))
-			return child(((ASTState*)subroot)->getState(), getElse);
-		return nullptr;
-	}*/
-
 	std::vector<std::string> get_outofcontext_vars(ASTNode * subroot)
 	{
+		std::cout << "gov called" << std::endl;
 		std::unordered_map<std::string, ASTVarDecl*> mvdecs;
 		std::vector<std::string> vdecs;
 		
 		//then get the var decls of the greater scope
-		ASTNode * last = subroot->getParent();
+		ASTNode * last = subroot;
 		subroot = subroot->getParent();
 		while(subroot)
 		{
 			for(auto v : get_vardecls(subroot, last))
 			{
-				if(mvdecs.find(v->getIden()) != mvdecs.end())
+				std::cout << "get_vardecls: " << v << std::endl;
+				if(mvdecs.find(v->getIden()) == mvdecs.end())
 				{
 					mvdecs[v->getIden()] = v;
 					vdecs.push_back(v->getIden());
