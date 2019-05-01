@@ -446,9 +446,9 @@ namespace naruto
 			return true;
 		bool res = false;
 		if(rhs)
-			res ||= rhs->isInTree(query);
+			res = res || rhs->isInTree(query);
 		if(lhs)
-			res ||= lhs->isInTree(query);
+			res =  res || lhs->isInTree(query);
 		return res;
 	}
 	
