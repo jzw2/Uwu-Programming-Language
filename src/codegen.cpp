@@ -470,13 +470,23 @@ llvm::Value * ASTLambdaThread::generate()
 	//doing locking of varialbes and barirers stuff
 	auto var_names = get_outofcontext_vars(this);
 	auto vars = sBuilder.CreateAlloca(llvm::Type::getInt64Ty(sContext), llvm::ConstantInt::get(sContext, llvm::APInt(64, var_names.size())));
+  std::string func_name = old_block->getParent()->getName();
+  for(int idx = 0; idx < var_names.size(); idx++) {
+		llvm::Value *v = sLocals[func_name + var_names[idx]];
+    //v->dump();
+    auto elptr = sBuilder.CreateConstGEP1_64(vars, idx);
+    auto casted_elptr = sBuilder.CreateBitCast(elptr, sBuilder.getInt64Ty()->getPointerTo()->getPointerTo());
+    //casted_elptr->dump();
+    sBuilder.CreateStore(v, casted_elptr);
+    //std::cout << "didnt fail here" << std::endl;
+  }
 	auto locks = sBuilder.CreateAlloca(llvm::Type::getInt64Ty(sContext), llvm::ConstantInt::get(sContext, llvm::APInt(64, var_names.size())));
 
 	auto barrier_lock = sBuilder.CreateAlloca(llvm::Type::getInt64Ty(sContext), llvm::ConstantInt::get(sContext, llvm::APInt(64, 1)));
   sBuilder.CreateStore(llvm::ConstantInt::get(sContext, llvm::APInt(64, 0)), barrier_lock);
 	auto barrier_count = sBuilder.CreateAlloca(llvm::Type::getInt64Ty(sContext), llvm::ConstantInt::get(sContext, llvm::APInt(64, 1)));
   sBuilder.CreateStore(llvm::ConstantInt::get(sContext, llvm::APInt(64, 0)), barrier_count);
-
+  
 	std::vector<llvm::Value*> params = {vars, locks, barrier_lock, barrier_count};
 	//created the function
 	llvm::Function* secret_func = llvm::Function::Create(anon_func_type, llvm::Function::ExternalLinkage, secret_func_name, sModule.get());
@@ -487,7 +497,7 @@ llvm::Value * ASTLambdaThread::generate()
 	sBuilder.SetInsertPoint(block);
 	for (auto &s : this->state) 
 	{
-		s->generate(var_names, fn_param);
+		s->generate(var_names, fn_param, func_name);
 	}
 
 
@@ -660,7 +670,7 @@ llvm::Value* CloneCall::generate()
 	return sBuilder.CreateCall(clone_func, clone_arguments, "clalling clone");
 }
 
-llvm::Value * ASTIden::generate(std::vector<std::string> var_names, llvm::Value * var_vals)
+llvm::Value * ASTIden::generate(std::vector<std::string> var_names, llvm::Value * var_vals, std::string fn_name)
 {
 	//i think this will work
 	int name_idx = -1;
@@ -675,18 +685,18 @@ llvm::Value * ASTIden::generate(std::vector<std::string> var_names, llvm::Value 
 
 	if(name_idx != -1) 
 	{
-		auto vars_address = sBuilder.CreateConstGEP1_64(var_vals, 0);
-		//auto locks_address = sBuilder.CreateGEP(var_vals, 1);
+    auto casted_param = sBuilder.CreateBitCast(var_vals, sBuilder.getInt64Ty()->getPointerTo()->getPointerTo());
+		auto vars_address = sBuilder.CreateConstGEP1_64(casted_param, 0);
 
 		auto vars = sBuilder.CreateLoad(vars_address);
-		//auto locks = sBuilder.CreateLoad(locks_address);
+    std::cout << "AH" << std::endl;
 
 		auto var_address = sBuilder.CreateConstGEP1_64(vars, name_idx);
-		//auto lock_address = sBuilder.CreateGEP(locks name_idx);
+    std::cout << "AHH" << std::endl;
 
 		auto var = sBuilder.CreateLoad(var_address);
-		//auto lock = sBuilder.CreateLoad(lock_address);
-
+    std::cout << "AHHH" << std::endl;
+    
 		return var;
 	}
 	else
@@ -703,17 +713,17 @@ llvm::Value * ASTIden::generate(std::vector<std::string> var_names, llvm::Value 
 	}
 }
 
-llvm::Value * ASTInt::generate(std::vector<std::string> var_names, llvm::Value * var_vals)
+llvm::Value * ASTInt::generate(std::vector<std::string> var_names, llvm::Value * var_vals, std::string fn_name)
 {
 	return llvm::ConstantInt::get(sContext, llvm::APInt(64, (uint64_t) val));
 }
 
-llvm::Value * ASTFloat::generate(std::vector<std::string> var_names, llvm::Value * var_vals)
+llvm::Value * ASTFloat::generate(std::vector<std::string> var_names, llvm::Value * var_vals, std::string fn_name)
 {
 	return llvm::ConstantFP::get(sContext, llvm::APFloat(val));
 }
 
-llvm::Value * ASTFnCall::generate(std::vector<std::string> var_names, llvm::Value * var_vals)
+llvm::Value * ASTFnCall::generate(std::vector<std::string> var_names, llvm::Value * var_vals, std::string fn_name)
 {
 	llvm::Function* func = sModule->getFunction(iden->getIden());
 	if (func == nullptr) 
@@ -755,7 +765,7 @@ llvm::Value * ASTFnCall::generate(std::vector<std::string> var_names, llvm::Valu
 	std::vector<llvm::Value*> args;
 	for (auto param : params) 
 	{
-		args.push_back(param->generate(var_names, var_vals));
+		args.push_back(param->generate(var_names, var_vals, fn_name));
 	}
 	return sBuilder.CreateCall(func, args, "calling the function");
 }
@@ -763,13 +773,13 @@ llvm::Value * ASTFnCall::generate(std::vector<std::string> var_names, llvm::Valu
 
 //this is all the generation funcs that want to use predefined ref from the array in var_vals
 //used soley for the generation of code in cloned func (from a shadow clone statement)
-llvm::Value * ASTExpr::generate(std::vector<std::string> var_names, llvm::Value * var_vals)
+llvm::Value * ASTExpr::generate(std::vector<std::string> var_names, llvm::Value * var_vals, std::string fn_name)
 {
 	//ok this one is going to be hard
 	if (op) 
 	{
-		auto left = lhs->generate(var_names, var_vals);
-		auto right = rhs->generate(var_names, var_vals);
+		auto left = lhs->generate(var_names, var_vals, fn_name);
+		auto right = rhs->generate(var_names, var_vals, fn_name);
 		if (op->getOp() == "+") 
 		{
 			return sBuilder.CreateAdd(left, right, "adding");
@@ -812,43 +822,43 @@ llvm::Value * ASTExpr::generate(std::vector<std::string> var_names, llvm::Value 
 	} 
 	else if (lhs) 
 	{
-		return lhs->generate(var_names, var_vals);
+		return lhs->generate(var_names, var_vals, fn_name);
 	} 
 	else if (iden) 
 	{
-		return iden->generate(var_names, var_vals);
+		return iden->generate(var_names, var_vals, fn_name);
 	} 
 	else if (int_v) 
 	{
-		return int_v->generate(var_names, var_vals);
+		return int_v->generate(var_names, var_vals, fn_name);
 	} 
 	else if (flt) 
 	{
-		return flt->generate(var_names, var_vals);
+		return flt->generate(var_names, var_vals, fn_name);
 	} 
 	else if (call) 
 	{
-		return call->generate(var_names, var_vals);
+		return call->generate(var_names, var_vals, fn_name);
 	} 
 	else if (str) 
 	{
-		return str->generate(var_names, var_vals);
+		return str->generate(var_names, var_vals, fn_name);
 	}
 
 	return nullptr;
 }
 
-llvm::Value * ASTRetExpr::generate(std::vector<std::string> var_names, llvm::Value * var_vals)
+llvm::Value * ASTRetExpr::generate(std::vector<std::string> var_names, llvm::Value * var_vals, std::string fn_name)
 {
 
-	return sBuilder.CreateRet(expr->generate(var_names, var_vals));
+	return sBuilder.CreateRet(expr->generate(var_names, var_vals, fn_name));
 }
 
 llvm::Function* get_spinlock_func();
 llvm::Function* get_spinlock_unlock_func();
 //not really declaration, rather it is assignment
 //if it has not been used before, create it 
-llvm::Value * ASTVarDecl::generate(std::vector<std::string> var_names, llvm::Value * var_vals) 
+llvm::Value * ASTVarDecl::generate(std::vector<std::string> var_names, llvm::Value * var_vals, std::string fn_name) 
 {
 	//i think this will work
 
@@ -872,15 +882,15 @@ llvm::Value * ASTVarDecl::generate(std::vector<std::string> var_names, llvm::Val
 
 
 	// Store the initial value into the alloca.
-	std::string func_name = sBuilder.GetInsertBlock()->getParent()->getName();
+	std::string func_name = should_lock ? fn_name : std::string(sBuilder.GetInsertBlock()->getParent()->getName());
 	std::string full_name = func_name + name->getIden();
 	llvm::Value* temp = nullptr;
-	auto locks_address = sBuilder.CreateConstGEP1_64(var_vals, 1);
+  auto casted_var_vals = sBuilder.CreateBitCast(var_vals, sBuilder.getInt64Ty()->getPointerTo()->getPointerTo());
+  
+  auto locks_address = sBuilder.CreateConstGEP1_64(casted_var_vals, 1);
 
 	auto locks = sBuilder.CreateLoad(locks_address);
 	auto lock_address = sBuilder.CreateConstGEP1_64(locks, i);
-	auto lock = sBuilder.CreateLoad(lock_address);
-
 
 
 	if(should_lock)  {
@@ -894,14 +904,14 @@ llvm::Value * ASTVarDecl::generate(std::vector<std::string> var_names, llvm::Val
 	{	
 		alloc = sLocals[full_name];
 
-
-		temp = sBuilder.CreateStore(val->generate(var_names, var_vals), alloc);
+    
+		temp = sBuilder.CreateStore(val->generate(var_names, var_vals, fn_name), alloc);
 
 
 	} 
 	else 
 	{
-		auto generated_val = val->generate(var_names, var_vals);
+		auto generated_val = val->generate(var_names, var_vals, fn_name);
 		alloc = sBuilder.CreateAlloca(llvm::Type::getInt64Ty(sContext));
 		temp = sBuilder.CreateStore(generated_val, alloc);
 		sLocals[full_name] = alloc;
@@ -918,7 +928,7 @@ llvm::Value * ASTVarDecl::generate(std::vector<std::string> var_names, llvm::Val
 	return temp;
 }
 
-llvm::Value * ASTSelState::generate(std::vector<std::string> var_names, llvm::Value * var_vals)
+llvm::Value * ASTSelState::generate(std::vector<std::string> var_names, llvm::Value * var_vals, std::string fn_name)
 {
 	bool should_lock = false;
 	int i;
@@ -934,7 +944,8 @@ llvm::Value * ASTSelState::generate(std::vector<std::string> var_names, llvm::Va
 
 
 	// Store the initial value into the alloca.
-	auto locks_address = sBuilder.CreateConstGEP1_64(var_vals, 1);
+  auto casted_var_vals = sBuilder.CreateBitCast(var_vals, sBuilder.getInt64Ty()->getPointerTo()->getPointerTo());
+	auto locks_address = sBuilder.CreateConstGEP1_64(casted_var_vals, 1);
 
 	auto locks = sBuilder.CreateLoad(locks_address);
 	auto lock_address = sBuilder.CreateConstGEP1_64(locks, i);
@@ -949,7 +960,7 @@ llvm::Value * ASTSelState::generate(std::vector<std::string> var_names, llvm::Va
 		sBuilder.CreateCall(spin_func, vals);
 
 	}
-	auto condition = expr->generate(var_names, var_vals);
+	auto condition = expr->generate(var_names, var_vals, fn_name);
 	if(should_lock)  {
 		auto spin_func = get_spinlock_unlock_func();
 		std::vector<llvm::Value*> vals;
@@ -968,7 +979,7 @@ llvm::Value * ASTSelState::generate(std::vector<std::string> var_names, llvm::Va
 
 	for (auto& then_state : if_body) 
 	{
-		then_state->generate(var_names, var_vals);
+		then_state->generate(var_names, var_vals, fn_name);
 	}
 	auto last_instr = sBuilder.GetInsertBlock()->getTerminator();
 	if (last_instr == nullptr || std::string("ret") != last_instr->getOpcodeName())
@@ -980,13 +991,13 @@ llvm::Value * ASTSelState::generate(std::vector<std::string> var_names, llvm::Va
 	sBuilder.SetInsertPoint(else_block); 
 	if (elif) 
 	{
-		elif->generate(var_names, var_vals);
+		elif->generate(var_names, var_vals, fn_name);
 	} 
 	else 
 	{
 		for (auto& else_statement : else_body) 
 		{
-			else_statement->generate(var_names, var_vals);
+			else_statement->generate(var_names, var_vals, fn_name);
 		}
 	}
 	auto last_instr2 = sBuilder.GetInsertBlock()->getTerminator();
@@ -1003,7 +1014,7 @@ llvm::Value * ASTSelState::generate(std::vector<std::string> var_names, llvm::Va
 	return nullptr;
 }
 
-llvm::Value * ASTWhileState::generate(std::vector<std::string> var_names, llvm::Value * var_vals)
+llvm::Value * ASTWhileState::generate(std::vector<std::string> var_names, llvm::Value * var_vals, std::string fn_name)
 {
 	llvm::Function* func = sBuilder.GetInsertBlock()->getParent();
 
@@ -1030,7 +1041,8 @@ llvm::Value * ASTWhileState::generate(std::vector<std::string> var_names, llvm::
 
 
 	// Store the initial value into the alloca.
-	auto locks_address = sBuilder.CreateConstGEP1_64(var_vals, 1);
+  auto casted_var_vals = sBuilder.CreateBitCast(var_vals, sBuilder.getInt64Ty()->getPointerTo()->getPointerTo());
+	auto locks_address = sBuilder.CreateConstGEP1_64(casted_var_vals, 1);
 
 	auto locks = sBuilder.CreateLoad(locks_address);
 	auto lock_address = sBuilder.CreateConstGEP1_64(locks, i);
@@ -1044,7 +1056,7 @@ llvm::Value * ASTWhileState::generate(std::vector<std::string> var_names, llvm::
 		sBuilder.CreateCall(spin_func, vals);
 
 	}
-	auto condition = expr->generate(var_names, var_vals);
+	auto condition = expr->generate(var_names, var_vals, fn_name);
 	if(should_lock)  {
 		auto spin_func = get_spinlock_unlock_func();
 		std::vector<llvm::Value*> vals;
@@ -1057,7 +1069,7 @@ llvm::Value * ASTWhileState::generate(std::vector<std::string> var_names, llvm::
 
 	sBuilder.SetInsertPoint(body_block);
 	for (auto& statement :	state) {
-		statement->generate(var_names, var_vals);
+		statement->generate(var_names, var_vals, fn_name);
 	}
 	sBuilder.CreateBr(check_block);
 
@@ -1066,37 +1078,37 @@ llvm::Value * ASTWhileState::generate(std::vector<std::string> var_names, llvm::
 	return nullptr;
 }
 
-llvm::Value * ASTState::generate(std::vector<std::string> var_names, llvm::Value * var_vals)
+llvm::Value * ASTState::generate(std::vector<std::string> var_names, llvm::Value * var_vals, std::string fn_name)
 {
 	if (retexpr) 
 	{
-		return retexpr->generate(var_names, var_vals);
+		return retexpr->generate(var_names, var_vals, fn_name);
 	} 
 	else if (vdc)
 	{
-		return vdc->generate(var_names, var_vals);
+		return vdc->generate(var_names, var_vals, fn_name);
 	} 
 	else if (expr) 
 	{
-		return expr->generate(var_names, var_vals);
+		return expr->generate(var_names, var_vals, fn_name);
 	} 
 	else if (ws) 
 	{
-		return ws->generate(var_names, var_vals);
+		return ws->generate(var_names, var_vals, fn_name);
 	} 
 	else if (ss) 
 	{
-		return ss->generate(var_names, var_vals);
+		return ss->generate(var_names, var_vals, fn_name);
 	} 
 	else if (thread) 
 	{
-		return thread->generate(var_names, var_vals);
+		return thread->generate(var_names, var_vals, fn_name);
 	}
 	return nullptr;
 }
 
 
-llvm::Value * ASTFnDecl::generate(std::vector<std::string> var_names, llvm::Value * var_vals)
+llvm::Value * ASTFnDecl::generate(std::vector<std::string> var_names, llvm::Value * var_vals, std::string fn_name)
 {
 	//idk what type its going to be so for now evertyhin is an into
 	std::vector<llvm::Type *> types(params.size(), llvm::Type::getInt64Ty(sContext)); 		
@@ -1128,28 +1140,28 @@ llvm::Value * ASTFnDecl::generate(std::vector<std::string> var_names, llvm::Valu
 	}
 	for (auto state : body) 
 	{
-		state->generate(var_names, var_vals);
+		state->generate(var_names, var_vals, fn_name);
 	}
 
 	return func;
 }
 
-llvm::Value* ASTRoot::generate(std::vector<std::string> var_names, llvm::Value * var_vals) 
+llvm::Value* ASTRoot::generate(std::vector<std::string> var_names, llvm::Value * var_vals, std::string fn_name) 
 {
 	for (auto& func : funcs) 
 	{
-		func->generate(var_names, var_vals);
+		func->generate(var_names, var_vals, fn_name);
 	}
 	return nullptr;
 }
 
-llvm::Value * ASTString::generate(std::vector<std::string> var_names, llvm::Value * var_vals)
+llvm::Value * ASTString::generate(std::vector<std::string> var_names, llvm::Value * var_vals, std::string fn_name)
 {
 	return sBuilder.CreateGlobalStringPtr(str);
 	//return llvm::ConstantDataArray::getString(sContext, llvm::StringRef(str));
 }
 
-llvm::Value * ASTLambdaThread::generate(std::vector<std::string> var_names, llvm::Value * var_vals) 
+llvm::Value * ASTLambdaThread::generate(std::vector<std::string> var_names, llvm::Value * var_vals, std::string fn_name) 
 {
 	auto old_block = sBuilder.GetInsertBlock();
 
@@ -1179,7 +1191,7 @@ llvm::Value * ASTLambdaThread::generate(std::vector<std::string> var_names, llvm
 	sBuilder.SetInsertPoint(block);
 	for (auto &s : this->state) 
 	{
-		s->generate(var_names2, fn_param);
+		s->generate(var_names2, fn_param, fn_name);
 	}
 	sBuilder.CreateRet(llvm::ConstantInt::get(sContext, llvm::APInt(64, 0)));
 
@@ -1189,7 +1201,7 @@ llvm::Value * ASTLambdaThread::generate(std::vector<std::string> var_names, llvm
 
 	long zero = 0;
 	ASTVarDecl* secret_init = new ASTVarDecl(secret_var, zero);
-	secret_init->generate(var_names, var_vals);
+	secret_init->generate(var_names, var_vals, fn_name);
 
 
 
@@ -1215,13 +1227,13 @@ llvm::Value * ASTLambdaThread::generate(std::vector<std::string> var_names, llvm
 	while_statement.generate();
 }
 
-llvm::Value * ASTBinOp::generate(std::vector<std::string> var_names, llvm::Value * var_vals)
+llvm::Value * ASTBinOp::generate(std::vector<std::string> var_names, llvm::Value * var_vals, std::string fn_name)
 {
 	//literally nothig
 	return nullptr;
 }
 
-llvm::Value* CloneCall::generate(std::vector<std::string> var_names, llvm::Value * var_vals) 
+llvm::Value* CloneCall::generate(std::vector<std::string> var_names, llvm::Value * var_vals, std::string fn_name) 
 { 
 
 	auto params_alloca = sBuilder.CreateAlloca(llvm::Type::getInt64Ty(sContext)->getPointerTo()->getPointerTo(), llvm::ConstantInt::get(sContext, llvm::APInt(64, 5)));

@@ -1,7 +1,10 @@
 senpai: no jutsu~
 	puts: "12\n" no jutsu~
-	shadow clone jutsu 10~
+  test-san wa 1 desu~
+  shadow clone jutsu 10~
          printf : "hi\n" no jutsu~
+         test wa 1 + test desu~
 	!!
+	printf: "\n" test no jutsu~
   sayonara 0 chan ~
 ~!
