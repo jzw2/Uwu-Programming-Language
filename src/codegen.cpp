@@ -470,22 +470,25 @@ llvm::Value * ASTLambdaThread::generate()
 	//doing locking of varialbes and barirers stuff
 	auto var_names = get_outofcontext_vars(this);
 	auto vars = sBuilder.CreateAlloca(llvm::Type::getInt64Ty(sContext), llvm::ConstantInt::get(sContext, llvm::APInt(64, var_names.size())));
+	auto locks = sBuilder.CreateAlloca(llvm::Type::getInt64Ty(sContext), llvm::ConstantInt::get(sContext, llvm::APInt(64, var_names.size())));
+  //initailize the array of vars
   std::string func_name = old_block->getParent()->getName();
   for(int idx = 0; idx < var_names.size(); idx++) {
-		llvm::Value *v = sLocals[func_name + var_names[idx]];
-    //v->dump();
+	llvm::Value *v = sLocals[func_name + var_names[idx]];
     auto elptr = sBuilder.CreateConstGEP1_64(vars, idx);
     auto casted_elptr = sBuilder.CreateBitCast(elptr, sBuilder.getInt64Ty()->getPointerTo()->getPointerTo());
-    //casted_elptr->dump();
-    sBuilder.CreateStore(v, casted_elptr);
-    //std::cout << "didnt fail here" << std::endl;
+	sBuilder.CreateStore(v, casted_elptr);
+	
+	//take this chance to intialize the locks to zero
+	auto elptr_locks = sBuilder.CreateConstGEP1_64(locks, idx);
+	sBuilder.CreateStore(llvm::ConstantInt::get(sContext, llvm::APInt(64, 0)), elptr_locks);
   }
-	auto locks = sBuilder.CreateAlloca(llvm::Type::getInt64Ty(sContext), llvm::ConstantInt::get(sContext, llvm::APInt(64, var_names.size())));
 
 	auto barrier_lock = sBuilder.CreateAlloca(llvm::Type::getInt64Ty(sContext), llvm::ConstantInt::get(sContext, llvm::APInt(64, 1)));
-  sBuilder.CreateStore(llvm::ConstantInt::get(sContext, llvm::APInt(64, 0)), barrier_lock);
+	sBuilder.CreateStore(llvm::ConstantInt::get(sContext, llvm::APInt(64, 0)), barrier_lock);
+	
 	auto barrier_count = sBuilder.CreateAlloca(llvm::Type::getInt64Ty(sContext), llvm::ConstantInt::get(sContext, llvm::APInt(64, 1)));
-  sBuilder.CreateStore(llvm::ConstantInt::get(sContext, llvm::APInt(64, 0)), barrier_count);
+	sBuilder.CreateStore(llvm::ConstantInt::get(sContext, llvm::APInt(64, 0)), barrier_count);
   
 	std::vector<llvm::Value*> params = {vars, locks, barrier_lock, barrier_count};
 	//created the function
@@ -682,20 +685,26 @@ llvm::Value * ASTIden::generate(std::vector<std::string> var_names, llvm::Value 
 			break;
 		}
 	}
-
-	if(name_idx != -1) 
+	
+	if(iden == "watashi")
 	{
-    auto casted_param = sBuilder.CreateBitCast(var_vals, sBuilder.getInt64Ty()->getPointerTo()->getPointerTo());
+		auto var_address = sBuilder.CreateConstGEP1_64(var_vals, 4);
+		auto var = sBuilder.CreateLoad(var_address);
+		return var;
+	}
+	else if(name_idx != -1) 
+	{
+   		auto casted_param = sBuilder.CreateBitCast(var_vals, sBuilder.getInt64Ty()->getPointerTo()->getPointerTo());
 		auto vars_address = sBuilder.CreateConstGEP1_64(casted_param, 0);
 
 		auto vars = sBuilder.CreateLoad(vars_address);
-    std::cout << "AH" << std::endl;
 
-		auto var_address = sBuilder.CreateConstGEP1_64(vars, name_idx);
-    std::cout << "AHH" << std::endl;
-
+		auto var_address_addr = sBuilder.CreateConstGEP1_64(vars, name_idx);
+   		auto var_address_addr_casted  = sBuilder.CreateBitCast(var_address_addr, sBuilder.getInt64Ty()->getPointerTo()->getPointerTo());
+		auto var_address = sBuilder.CreateLoad(var_address_addr_casted);
+		
 		auto var = sBuilder.CreateLoad(var_address);
-    std::cout << "AHHH" << std::endl;
+		//auto var = sBuilder.CreateLoad(var_address_addr);
     
 		return var;
 	}
@@ -879,37 +888,42 @@ llvm::Value * ASTVarDecl::generate(std::vector<std::string> var_names, llvm::Val
 		}
 	}
 
-
-
 	// Store the initial value into the alloca.
 	std::string func_name = should_lock ? fn_name : std::string(sBuilder.GetInsertBlock()->getParent()->getName());
 	std::string full_name = func_name + name->getIden();
 	llvm::Value* temp = nullptr;
-  auto casted_var_vals = sBuilder.CreateBitCast(var_vals, sBuilder.getInt64Ty()->getPointerTo()->getPointerTo());
+	auto casted_var_vals = sBuilder.CreateBitCast(var_vals, sBuilder.getInt64Ty()->getPointerTo()->getPointerTo());
   
-  auto locks_address = sBuilder.CreateConstGEP1_64(casted_var_vals, 1);
+	auto locks_address = sBuilder.CreateConstGEP1_64(casted_var_vals, 1);
 
 	auto locks = sBuilder.CreateLoad(locks_address);
 	auto lock_address = sBuilder.CreateConstGEP1_64(locks, i);
-
 
 	if(should_lock)  {
 		auto spin_func = get_spinlock_func();
 		std::vector<llvm::Value*> vals;
 		vals.push_back(lock_address);
 		sBuilder.CreateCall(spin_func, vals);
-
 	}
-	if (sLocals.count(full_name)) 
+
+	if(should_lock) 
+	{
+		auto casted_param = sBuilder.CreateBitCast(var_vals, sBuilder.getInt64Ty()->getPointerTo()->getPointerTo());
+		auto vars_address = sBuilder.CreateConstGEP1_64(casted_param, 0);
+
+		auto vars = sBuilder.CreateLoad(vars_address);
+
+		auto var_address_addr = sBuilder.CreateConstGEP1_64(vars, i);
+   		auto var_address_addr_casted  = sBuilder.CreateBitCast(var_address_addr, sBuilder.getInt64Ty()->getPointerTo()->getPointerTo());
+		auto var_address = sBuilder.CreateLoad(var_address_addr_casted);
+		temp = sBuilder.CreateStore(val->generate(var_names, var_vals, fn_name), var_address);
+	}
+	else if (sLocals.count(full_name)) 
 	{	
 		alloc = sLocals[full_name];
-
-    
 		temp = sBuilder.CreateStore(val->generate(var_names, var_vals, fn_name), alloc);
-
-
 	} 
-	else 
+	else
 	{
 		auto generated_val = val->generate(var_names, var_vals, fn_name);
 		alloc = sBuilder.CreateAlloca(llvm::Type::getInt64Ty(sContext));
