@@ -434,7 +434,7 @@ llvm::Function* get_spinlock_unlock_func() {
 		llvm::FunctionType *spin_lock_unlock_func_type = llvm::FunctionType::get(llvm::Type::getVoidTy(sContext), spinlock_unlock_func_vec, false);
 
 
-		spinlock_unlock = llvm::Function::Create(spin_lock_unlock_func_type, llvm::Function::ExternalLinkage, "spin_lock", sModule.get());
+		spinlock_unlock = llvm::Function::Create(spin_lock_unlock_func_type, llvm::Function::ExternalLinkage, "spin_lock_unlock", sModule.get());
 
 
 		llvm::BasicBlock *block = llvm::BasicBlock::Create(sContext, "body", spinlock_unlock); 
