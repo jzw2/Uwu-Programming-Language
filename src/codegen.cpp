@@ -56,14 +56,14 @@ namespace naruto {
 				//pro hack
 
 				std::vector<llvm::Type *> putsArgs;
-				putsArgs.push_back(sBuilder.getInt64Ty()->getPointerTo());
+				putsArgs.push_back(sBuilder.getInt8Ty()->getPointerTo());
 				llvm::FunctionType *putsType = llvm::FunctionType::get(sBuilder.getInt32Ty(), putsArgs, false);
 				func = llvm::Function::Create(putsType, llvm::Function::ExternalLinkage, "puts", sModule.get());
 			} 
 			else if (iden->getIden() == "printf") 
 			{//pro hack
 				std::vector<llvm::Type *> putsArgs;
-				putsArgs.push_back(sBuilder.getInt64Ty()->getPointerTo());
+				putsArgs.push_back(sBuilder.getInt8Ty()->getPointerTo());
 				llvm::FunctionType *putsType = llvm::FunctionType::get(sBuilder.getInt32Ty(), putsArgs, true);
 				func = llvm::Function::Create(putsType, llvm::Function::ExternalLinkage, "printf", sModule.get());
 			} 
@@ -390,7 +390,7 @@ llvm::Function* get_spinlock_func() {
 
 		std::vector<llvm::Type *> spin_lock_func_vec;
 		spin_lock_func_vec.push_back(llvm::Type::getInt64Ty(sContext)->getPointerTo());
-		llvm::FunctionType *spin_lock_func_type = llvm::FunctionType::get(llvm::Type::getInt64Ty(sContext), spin_lock_func_vec, false);
+		llvm::FunctionType *spin_lock_func_type = llvm::FunctionType::get(llvm::Type::getVoidTy(sContext), spin_lock_func_vec, false);
 
 
 		spin_lock_func = llvm::Function::Create(spin_lock_func_type, llvm::Function::ExternalLinkage, "spin_lock", sModule.get());
@@ -431,7 +431,7 @@ llvm::Function* get_spinlock_unlock_func() {
 
 		std::vector<llvm::Type *> spinlock_unlock_func_vec;
 		spinlock_unlock_func_vec.push_back(llvm::Type::getInt64Ty(sContext)->getPointerTo());
-		llvm::FunctionType *spin_lock_unlock_func_type = llvm::FunctionType::get(llvm::Type::getInt64Ty(sContext), spinlock_unlock_func_vec, false);
+		llvm::FunctionType *spin_lock_unlock_func_type = llvm::FunctionType::get(llvm::Type::getVoidTy(sContext), spinlock_unlock_func_vec, false);
 
 
 		spinlock_unlock = llvm::Function::Create(spin_lock_unlock_func_type, llvm::Function::ExternalLinkage, "spin_lock", sModule.get());
@@ -458,9 +458,11 @@ llvm::Function* get_spinlock_unlock_func() {
 }
 llvm::Value * ASTLambdaThread::generate() 
 {
+  //I don't know I might need this latecr
 	auto old_block = sBuilder.GetInsertBlock();
 
 	std::string secret_func_name = "xx___secrete_FuncTion__";
+  //extract the statements into a function that is called through clone
 	std::vector<llvm::Type *> anon_func_types_vec;
 	anon_func_types_vec.push_back(llvm::Type::getInt64Ty(sContext)->getPointerTo());
 	llvm::FunctionType *anon_func_type = llvm::FunctionType::get(llvm::Type::getInt64Ty(sContext), anon_func_types_vec, false);
@@ -471,12 +473,14 @@ llvm::Value * ASTLambdaThread::generate()
 	auto locks = sBuilder.CreateAlloca(llvm::Type::getInt64Ty(sContext), llvm::ConstantInt::get(sContext, llvm::APInt(64, var_names.size())));
 
 	auto barrier_lock = sBuilder.CreateAlloca(llvm::Type::getInt64Ty(sContext), llvm::ConstantInt::get(sContext, llvm::APInt(64, 1)));
+  sBuilder.CreateStore(llvm::ConstantInt::get(sContext, llvm::APInt(64, 0)), barrier_lock);
 	auto barrier_count = sBuilder.CreateAlloca(llvm::Type::getInt64Ty(sContext), llvm::ConstantInt::get(sContext, llvm::APInt(64, 1)));
+  sBuilder.CreateStore(llvm::ConstantInt::get(sContext, llvm::APInt(64, 0)), barrier_count);
 
 	std::vector<llvm::Value*> params = {vars, locks, barrier_lock, barrier_count};
 	//created the function
 	llvm::Function* secret_func = llvm::Function::Create(anon_func_type, llvm::Function::ExternalLinkage, secret_func_name, sModule.get());
-	auto fn_param = (&*secret_func->arg_begin());
+	auto fn_param = (&*secret_func->arg_begin()); //possible not good?
 
 		//creatirg fntuctiuon bady
 		llvm::BasicBlock *block = llvm::BasicBlock::Create(sContext, "entry point", secret_func);
@@ -486,18 +490,42 @@ llvm::Value * ASTLambdaThread::generate()
 		s->generate(var_names, fn_param);
 	}
 
-	sBuilder.CreateRet(llvm::ConstantInt::get(sContext, llvm::APInt(64, 0)));
 
+  //we need to extract the barrier variable and lock, lock teh lock and increment, then lock again
+  auto casted_param = sBuilder.CreateBitCast(fn_param, sBuilder.getInt64Ty()->getPointerTo()->getPointerTo());
+
+  //extract barrier
+  auto func_barrier_lock_ptr_ptr = sBuilder.CreateConstGEP1_64(casted_param, 2);
+  auto func_barrier_lock_ptr  = sBuilder.CreateLoad(func_barrier_lock_ptr_ptr);
+
+  auto func_barrier_count_ptr_ptr = sBuilder.CreateConstGEP1_64(casted_param, 3);
+  auto func_barrier_count_ptr  = sBuilder.CreateLoad(func_barrier_count_ptr_ptr);
+
+
+  auto lock_call = get_spinlock_func();
+  sBuilder.CreateCall(lock_call, std::vector<llvm::Value*>{func_barrier_lock_ptr});
+
+  auto current_bar_val = sBuilder.CreateLoad(func_barrier_count_ptr);
+
+  auto new_bar_val = sBuilder.CreateAdd(current_bar_val,     llvm::ConstantInt::get(sContext, llvm::APInt(64, 1)));
+
+  sBuilder.CreateStore(new_bar_val, func_barrier_count_ptr);
+
+  auto unlock_call = get_spinlock_unlock_func();
+  sBuilder.CreateCall(unlock_call, std::vector<llvm::Value*>{func_barrier_lock_ptr});
+
+  //user is not supposed to write return in the lambda block, so we create the return for them
+	sBuilder.CreateRet(llvm::ConstantInt::get(sContext, llvm::APInt(64, 0)));
+  //return to creating things such as the loop in the old block
 	sBuilder.SetInsertPoint(old_block);
 
+  //secret var is the counter to keep track of the amount of threads spawned, and also  gives the thread id
 	std::string secret_var = "__secret_variable";
 
 	long zero = 0;
+  //initailziaiton of the thread
 	ASTVarDecl* secret_init = new ASTVarDecl(secret_var, zero);
 	secret_init->generate();
-
-	//ARY, always repeat yourself
-
 
 
   //making the loop for creating clone calls
@@ -508,9 +536,12 @@ llvm::Value * ASTLambdaThread::generate()
 
 	std::vector<ASTState*> loop_statements;
 
+  //recurse into clone call
 	CloneCall* cc = new CloneCall(secret_func_name, params, secret_init->getName());
 	cc->setParent(this);
 	auto clone_state = new ASTState(cc);
+  
+  //add cloning to the loop
 	loop_statements.push_back(clone_state); //change this later
 
 	auto inc = ASTExpr::make_plus_plus(secret_var);
@@ -523,18 +554,19 @@ llvm::Value * ASTLambdaThread::generate()
 	ASTWhileState while_statement(cond, loop_statements);
 	while_statement.generate();
 
-
   //loop for makig it stall until all threads finish
-	llvm::Function* this_func = sModule->getFunction("spin_lock");
+	llvm::Function* this_func = sBuilder.GetInsertBlock()->getParent();
   llvm::BasicBlock *join_block = llvm::BasicBlock::Create(sContext, "waitng for join", this_func);
   
   llvm::BasicBlock *merge_block = llvm::BasicBlock::Create(sContext, " merge spnilokc block", this_func); 
+
+  sBuilder.CreateBr(join_block);
+
+  
   sBuilder.SetInsertPoint(join_block);
 
   auto barrier_val = sBuilder.CreateLoad(barrier_count, "getting the barrier");
-  barrier_val->dump();
   auto expr_generated = expr->generate();
-  expr_generated->dump();
   auto compare_value = sBuilder.CreateICmpEQ(barrier_val, expr_generated, "comparing");
   //we need to switch because if it is equal, then we will jump to merge, which means we continue
   sBuilder.CreateCondBr(compare_value, merge_block, join_block);
@@ -618,7 +650,12 @@ llvm::Value* CloneCall::generate()
 	//create the gep arguments
 	clone_arguments.push_back(stack_top);
 	clone_arguments.push_back(llvm::ConstantInt::get(sContext, llvm::APInt(32, 256)));
-	clone_arguments.push_back(llvm::Constant::getNullValue(sBuilder.getInt64Ty()->getPointerTo()));
+
+
+  //need to cast
+  auto casted_param = sBuilder.CreateBitCast(params_alloca, sBuilder.getInt64Ty()->getPointerTo());
+
+	clone_arguments.push_back(casted_param);
 
 	return sBuilder.CreateCall(clone_func, clone_arguments, "clalling clone");
 }
@@ -686,14 +723,14 @@ llvm::Value * ASTFnCall::generate(std::vector<std::string> var_names, llvm::Valu
 			//pro hack
 
 			std::vector<llvm::Type *> putsArgs;
-			putsArgs.push_back(sBuilder.getInt64Ty()->getPointerTo());
+			putsArgs.push_back(sBuilder.getInt8Ty()->getPointerTo());
 			llvm::FunctionType *putsType = llvm::FunctionType::get(sBuilder.getInt32Ty(), putsArgs, false);
 			func = llvm::Function::Create(putsType, llvm::Function::ExternalLinkage, "puts", sModule.get());
 		} 
 		else if (iden->getIden() == "printf") 
 		{//pro hack
 			std::vector<llvm::Type *> putsArgs;
-			putsArgs.push_back(sBuilder.getInt64Ty()->getPointerTo());
+			putsArgs.push_back(sBuilder.getInt8Ty()->getPointerTo());
 			llvm::FunctionType *putsType = llvm::FunctionType::get(sBuilder.getInt32Ty(), putsArgs, true);
 			func = llvm::Function::Create(putsType, llvm::Function::ExternalLinkage, "printf", sModule.get());
 		} 
