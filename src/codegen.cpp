@@ -685,8 +685,14 @@ llvm::Value * ASTIden::generate(std::vector<std::string> var_names, llvm::Value 
 			break;
 		}
 	}
-
-	if(name_idx != -1) 
+	
+	if(iden == "watashi")
+	{
+		auto var_address = sBuilder.CreateConstGEP1_64(var_vals, 4);
+		auto var = sBuilder.CreateLoad(var_address);
+		return var;
+	}
+	else if(name_idx != -1) 
 	{
    		auto casted_param = sBuilder.CreateBitCast(var_vals, sBuilder.getInt64Ty()->getPointerTo()->getPointerTo());
 		auto vars_address = sBuilder.CreateConstGEP1_64(casted_param, 0);
