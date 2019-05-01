@@ -381,7 +381,127 @@ br i1 %success, label %done, label %loop
 done:
 ret void
 }a */
+<<<<<<< HEAD
 	llvm::Function* get_spinlock_func() 
+=======
+llvm::Function* get_spinlock_func() {
+	llvm::Function* spin_lock_func = sModule->getFunction("spin_lock");
+	if (spin_lock_func == nullptr) 
+	{ 
+		auto old_block = sBuilder.GetInsertBlock();
+
+		std::vector<llvm::Type *> spin_lock_func_vec;
+		spin_lock_func_vec.push_back(llvm::Type::getInt64Ty(sContext)->getPointerTo());
+		llvm::FunctionType *spin_lock_func_type = llvm::FunctionType::get(llvm::Type::getVoidTy(sContext), spin_lock_func_vec, false);
+
+
+		spin_lock_func = llvm::Function::Create(spin_lock_func_type, llvm::Function::ExternalLinkage, "spin_lock", sModule.get());
+
+
+		llvm::BasicBlock *block = llvm::BasicBlock::Create(sContext, "spnilock loop", spin_lock_func); 
+		llvm::BasicBlock *merge_block = llvm::BasicBlock::Create(sContext, " merge spnilokc block", spin_lock_func); 
+
+		sBuilder.SetInsertPoint(block);
+
+
+		llvm::Value*  lock = &*spin_lock_func->arg_begin();
+
+		auto result = sBuilder.CreateAtomicCmpXchg(lock, llvm::ConstantInt::get(sContext, llvm::APInt(64, 0)),llvm::ConstantInt::get(sContext, llvm::APInt(64, 1) ), llvm::AtomicOrdering::Acquire, llvm::AtomicOrdering::Monotonic);
+
+
+		std::vector<unsigned> indexes;
+		indexes.push_back(1);
+		auto success = sBuilder.CreateExtractValue(result, indexes, "success");
+
+		sBuilder.CreateCondBr(success, merge_block, block);
+
+		sBuilder.SetInsertPoint(merge_block);
+		sBuilder.CreateRetVoid();
+		sBuilder.SetInsertPoint(old_block);
+
+
+
+	}
+	return spin_lock_func;
+}
+
+llvm::Function* get_spinlock_unlock_func() {
+	llvm::Function* spinlock_unlock = sModule->getFunction("spin_lock_unlock");
+	if (spinlock_unlock == nullptr) 
+	{ 
+		auto old_block = sBuilder.GetInsertBlock();
+
+		std::vector<llvm::Type *> spinlock_unlock_func_vec;
+		spinlock_unlock_func_vec.push_back(llvm::Type::getInt64Ty(sContext)->getPointerTo());
+		llvm::FunctionType *spin_lock_unlock_func_type = llvm::FunctionType::get(llvm::Type::getVoidTy(sContext), spinlock_unlock_func_vec, false);
+
+
+		spinlock_unlock = llvm::Function::Create(spin_lock_unlock_func_type, llvm::Function::ExternalLinkage, "spin_lock_unlock", sModule.get());
+
+
+		llvm::BasicBlock *block = llvm::BasicBlock::Create(sContext, "body", spinlock_unlock); 
+
+		sBuilder.SetInsertPoint(block);
+
+
+		llvm::Value*  lock = &*spinlock_unlock->arg_begin();
+
+		sBuilder.CreateFence(llvm::AtomicOrdering::Release);
+
+
+		sBuilder.CreateStore(llvm::ConstantInt::get(sContext, llvm::APInt(64, 0)), lock);
+		sBuilder.CreateRetVoid();
+		sBuilder.SetInsertPoint(old_block);
+
+
+
+	}
+	return spinlock_unlock ;
+}
+llvm::Value * ASTLambdaThread::generate() 
+{
+  //I don't know I might need this latecr
+	auto old_block = sBuilder.GetInsertBlock();
+
+	std::string secret_func_name = "xx___secrete_FuncTion__";
+  //extract the statements into a function that is called through clone
+	std::vector<llvm::Type *> anon_func_types_vec;
+	anon_func_types_vec.push_back(llvm::Type::getInt64Ty(sContext)->getPointerTo());
+	llvm::FunctionType *anon_func_type = llvm::FunctionType::get(llvm::Type::getInt64Ty(sContext), anon_func_types_vec, false);
+
+	//doing locking of varialbes and barirers stuff
+	auto var_names = get_outofcontext_vars(this);
+	auto vars = sBuilder.CreateAlloca(llvm::Type::getInt64Ty(sContext), llvm::ConstantInt::get(sContext, llvm::APInt(64, var_names.size())));
+	auto locks = sBuilder.CreateAlloca(llvm::Type::getInt64Ty(sContext), llvm::ConstantInt::get(sContext, llvm::APInt(64, var_names.size())));
+  //initailize the array of vars
+  std::string func_name = old_block->getParent()->getName();
+  for(int idx = 0; idx < var_names.size(); idx++) {
+	llvm::Value *v = sLocals[func_name + var_names[idx]];
+    auto elptr = sBuilder.CreateConstGEP1_64(vars, idx);
+    auto casted_elptr = sBuilder.CreateBitCast(elptr, sBuilder.getInt64Ty()->getPointerTo()->getPointerTo());
+	sBuilder.CreateStore(v, casted_elptr);
+	
+	//take this chance to intialize the locks to zero
+	auto elptr_locks = sBuilder.CreateConstGEP1_64(locks, idx);
+	sBuilder.CreateStore(llvm::ConstantInt::get(sContext, llvm::APInt(64, 0)), elptr_locks);
+  }
+
+	auto barrier_lock = sBuilder.CreateAlloca(llvm::Type::getInt64Ty(sContext), llvm::ConstantInt::get(sContext, llvm::APInt(64, 1)));
+	sBuilder.CreateStore(llvm::ConstantInt::get(sContext, llvm::APInt(64, 0)), barrier_lock);
+	
+	auto barrier_count = sBuilder.CreateAlloca(llvm::Type::getInt64Ty(sContext), llvm::ConstantInt::get(sContext, llvm::APInt(64, 1)));
+	sBuilder.CreateStore(llvm::ConstantInt::get(sContext, llvm::APInt(64, 0)), barrier_count);
+  
+	std::vector<llvm::Value*> params = {vars, locks, barrier_lock, barrier_count};
+	//created the function
+	llvm::Function* secret_func = llvm::Function::Create(anon_func_type, llvm::Function::ExternalLinkage, secret_func_name, sModule.get());
+	auto fn_param = (&*secret_func->arg_begin()); //possible not good?
+
+		//creatirg fntuctiuon bady
+		llvm::BasicBlock *block = llvm::BasicBlock::Create(sContext, "entry point", secret_func);
+	sBuilder.SetInsertPoint(block);
+	for (auto &s : this->state) 
+>>>>>>> 2bee0b6d078ab0514dfab400f5dde1284ae13a2c
 	{
 		llvm::Function* spin_lock_func = sModule->getFunction("spin_lock");
 		if (spin_lock_func == nullptr) 
