@@ -31,8 +31,7 @@ int main(int argc, char **argv) {
       break;
     }
   }
-  auto base = filename.substr(begin_index, filename.length() - 3);
-
+  auto base = filename.substr(begin_index, filename.length() - begin_index - 3);
 
   std::string llvm_file = base + "ll";
 

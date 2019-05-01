@@ -1,21 +1,28 @@
-factorial-kun: n-san no jutsu~
-	result-kun wa 1.0 desu~
-	doki n > (n/10)*10~
+factorial-san: m-san no jutsu~
+	result-san wa 1 desu~
+	n-san wa m desu~
+	doki n > (n/3)*3~
 		result wa result*n desu~
 		n wa n-1 desu~ 
 	~~
 	result wa result*n desu~
-	shadow clone jutsu 10~ (OwO) start 9 threads (T_T)
+	shadow clone jutsu 3~
 		i-san wa 0 desu~
-		temp-kun wa 1.0 desu~
-		doki (n/10)*namae + i < ((n/10)*(namae+1))~
-			temp wa temp*((n/10)*namae + 1) desu~
+		temp-san wa 1 desu~
+		doki ((n/3)*watashi + i) < ((n/3)*(watashi+1))~
+			nani ((n/3)*watashi + i) desu ga 0~
+				temp wa 1 desu~
+			baka nani 1 desu ga 1~
+				temp wa temp*((n/3)*watashi + i) desu~
+			~?
 			i wa i+1 desu~
 		~~
-		result wa temp*result desu~
+		result wa temp*result desu~ 
 	!!
+	sayonara result chan~
 !!
 
 senpai: no jutsu~
-	printf: "%d\n" factorial: 2134 no jutsu no jutsu ~
+	printf: "%d\n" factorial: 11 no jutsu no jutsu ~
+	sayonara 0 chan~
 ~!
