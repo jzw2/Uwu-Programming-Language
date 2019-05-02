@@ -8,65 +8,68 @@
 extern llvm::LLVMContext naruto::sContext;
 extern std::unique_ptr<llvm::Module> naruto::sModule;
 void test1() {
-  // naruto::ASTInt six;
-  // six.setVal(69);
+	// naruto::ASTInt six;
+	// six.setVal(69);
 
-  // naruto::ASTExpr six_expr;
-  // six_expr.setInt_V(&six);
+	// naruto::ASTExpr six_expr;
+	// six_expr.setInt_V(&six);
 
-  // naruto::ASTRetExpr expr;
-  // expr.setExpr(&six_expr);
+	// naruto::ASTRetExpr expr;
+	// expr.setExpr(&six_expr);
 
-  // naruto::ASTState state;
-  // state.setRetExpr(&expr);
+	// naruto::ASTState state;
+	// state.setRetExpr(&expr);
 
-  // naruto::ASTIden name;
-  // name.setIden("testfunc");
+	// naruto::ASTIden name;
+	// name.setIden("testfunc");
 
-  // naruto::ASTFnDecl func;
-  // func.setName(&name);
+	// naruto::ASTFnDecl func;
+	// func.setName(&name);
 
-  // auto params = func.getParams(); //params should be void
-  
-  // auto body = func.getBody();
-  // body.push_back(&state);
+	// auto params = func.getParams(); //params should be void
+	
+	// auto body = func.getBody();
+	// body.push_back(&state);
 
-  // func.generate();
+	// func.generate();
 
-  naruto::sModule = llvm::make_unique<llvm::Module>("module", naruto::sContext);
-  std::vector<naruto::Lex> stream = naruto::naruto_lexize_file("test.uwu");
+	naruto::sModule = llvm::make_unique<llvm::Module>("module", naruto::sContext);
+	std::vector<naruto::Lex> stream = naruto::naruto_lexize_file("test.uwu");
  
-  naruto::ASTFnDecl f;
-  f.parse(stream, 0);
-  f.print();
-  f.generate();
+	naruto::ASTFnDecl f;
+	f.parse(stream, 0);
+	f.print();
+	f.generate();
 
-  llvm::raw_os_ostream file_stream(std::cout);
+	llvm::raw_os_ostream file_stream(std::cout);
  naruto::sModule->print(file_stream, nullptr);
 }
 
 void test2() {
-  naruto::sModule = llvm::make_unique<llvm::Module>("module", naruto::sContext);
-  std::vector<naruto::Lex> stream = naruto::naruto_lexize_file("test3.uwu");
-  naruto::ASTFnDecl f;
-  f.parse(stream, 0);
-  f.generate();
+	naruto::sModule = llvm::make_unique<llvm::Module>("module", naruto::sContext);
+	std::vector<naruto::Lex> stream = naruto::naruto_lexize_file("test3.uwu");
+	naruto::ASTFnDecl f;
+	f.parse(stream, 0);
+	f.generate();
 
-  llvm::raw_os_ostream file_stream(std::cout);
-  naruto::sModule->print(file_stream, nullptr);
-  
+	llvm::raw_os_ostream file_stream(std::cout);
+	naruto::sModule->print(file_stream, nullptr);
+	
 }
 void testFib() {
-  
-  naruto::sModule = llvm::make_unique<llvm::Module>("module", naruto::sContext);
-  std::vector<naruto::Lex> stream = naruto::naruto_lexize_file("../code_samples/fib.uwu");
-  naruto::ASTRoot f;
-  f.parse(stream, 0);
-  // f.print();
-  f.generate();
+	
+	naruto::sModule = llvm::make_unique<llvm::Module>("module", naruto::sContext);
+	std::vector<naruto::Lex> stream = naruto::naruto_lexize_file("../code_samples/factorial.uwu");
+	naruto::ASTRoot * f = new naruto::ASTRoot();
+	f->parse(stream, 0);
 
-  llvm::raw_os_ostream file_stream(std::cout);
-  naruto::sModule->print(file_stream, nullptr);
+	naruto::ASTFnDecl * factorial = f->getFuncs()[0];
+	naruto::ASTState * scj = factorial->getBody()[3];
+	auto vars = naruto::get_outofcontext_vars(scj);
+	for(auto v : vars)
+		std::cout << v << std::endl;
+	//llvm::raw_os_ostream file_stream(std::cout);
+	//naruto::sModule->print(file_stream, nullptr);
 }
 
 void testExprParse()
@@ -109,9 +112,9 @@ void testFileParse()
 
 int main(void)
 {
-  //naruto::sModule = llvm::make_unique<llvm::Module>("module", naruto::sContext);
-  //test1();
-  testFib();
-  //testExprParse();
+	//naruto::sModule = llvm::make_unique<llvm::Module>("module", naruto::sContext);
+	//test1();
+	testFib();
+	//testExprParse();
 return 0;
 }

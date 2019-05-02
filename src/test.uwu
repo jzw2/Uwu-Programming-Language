@@ -1,9 +1,10 @@
-	shadow clone jutsu 10~ (OwO) start 9 threads (T_T)
-		i wa 0 desu~
-		temp wa 1.0 desu~
-		doki ((n/10)*namae + i < ((n/10)*(namae+1)))~
-			temp wa temp*((n/10)*namae + 1) desu~
-			i wa i+1 desu~
-		~~
-		result wa temp*result desu~
+senpai: no jutsu~
+	puts: "12\n" no jutsu~
+  test-san wa 1 desu~
+  shadow clone jutsu 10~
+         printf : "hi\n" no jutsu~
+         test wa 1 + test desu~
 	!!
+	printf: "\n" test no jutsu~
+  sayonara 0 chan ~
+~!
